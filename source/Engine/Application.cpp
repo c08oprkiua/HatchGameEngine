@@ -1867,8 +1867,10 @@ void Application::OpenDevMenu() {
 
     AudioManager::AudioPauseAll();
     AudioManager::Lock();
-    if (AudioManager::MusicStack.size() > 0)
+    if (AudioManager::MusicStack.size() > 0) {
+        DevMenu.MusicPausedStore = AudioManager::MusicStack[0]->Paused;
         AudioManager::MusicStack[0]->Paused = true;
+    }
     AudioManager::Unlock();
 
     Application::DevMenuActivated = true;
@@ -1881,8 +1883,10 @@ void Application::CloseDevMenu() {
 
     AudioManager::AudioUnpauseAll();
     AudioManager::Lock();
-    if (AudioManager::MusicStack.size() > 0)
-        AudioManager::MusicStack[0]->Paused = false;
+    if (AudioManager::MusicStack.size() > 0) {
+        AudioManager::MusicStack[0]->Paused = DevMenu.MusicPausedStore;
+        DevMenu.MusicPausedStore = false;
+    }
     AudioManager::Unlock();
 }
 
@@ -1895,6 +1899,7 @@ void Application::SetBlendColor(int color) {
 
 void Application::DrawRectangle(float x, float y, float width, float height, int color, int alpha, bool screenRelative) {
     if (screenRelative) {
+        // TODO: I think this should be current view
         x += Scene::Views[0].X;
         y += Scene::Views[0].Y;
     }
@@ -2408,20 +2413,20 @@ void Application::DevMenu_AudioMenu() {
 
     DrawRectangle((view.Width / 2.0) - 140.0, 82.0, 280.0, 113.0, 0x000000, 0xFF, true);
 
-    DrawDevString("Master Volume", ((int)view.Width / 2) - 124, 93, ALIGN_LEFT, DevMenu.SubSelection == 0);
-    DrawDevString("Music Volume", ((int)view.Width / 2) - 124, 108, ALIGN_LEFT, DevMenu.SubSelection == 1);
-    DrawDevString("Sound Volume", ((int)view.Width / 2) - 124, 123, ALIGN_LEFT, DevMenu.SubSelection == 2);
-    DrawDevString("Confirm", (int)view.Width / 2, 150, ALIGN_CENTER, DevMenu.SubSelection == 3);
+    DrawDevString("Master Volume", ((int)view.Width / 2) - 124, 105, ALIGN_LEFT, DevMenu.SubSelection == 0);
+    DrawDevString("Music Volume", ((int)view.Width / 2) - 124, 121, ALIGN_LEFT, DevMenu.SubSelection == 1);
+    DrawDevString("Sound Volume", ((int)view.Width / 2) - 124, 137, ALIGN_LEFT, DevMenu.SubSelection == 2);
+    DrawDevString("Confirm", (int)view.Width / 2, 171, ALIGN_CENTER, DevMenu.SubSelection == 3);
 
-    float y = 93.0;
+    float y = 98.0;
     for (int i = 0; i < 3; i++) {
         DrawRectangle(view.Width - 190, y, 104.0, 15.0, 0x303030, 0xFF, true);
         y += 16.0;
     }
 
-    DrawRectangle(view.Width - 188.0, 95.0, (float)Application::MasterVolume, 11.0, 0xFFFFFF, 0xFF, true);
-    DrawRectangle(view.Width - 188.0, 111.0, (float)Application::MusicVolume, 11.0, 0xFFFFFF, 0xFF, true);
-    DrawRectangle(view.Width - 188.0, 127.0, (float)Application::SoundVolume, 11.0, 0xFFFFFF, 0xFF, true);
+    DrawRectangle(view.Width - 188.0, 100.0, (float)Application::MasterVolume, 11.0, 0xFFFFFF, 0xFF, true);
+    DrawRectangle(view.Width - 188.0, 116.0, (float)Application::MusicVolume, 11.0, 0xFFFFFF, 0xFF, true);
+    DrawRectangle(view.Width - 188.0, 132.0, (float)Application::SoundVolume, 11.0, 0xFFFFFF, 0xFF, true);
 
     if (InputManager::GetActionID("Up") != -1) {
         if (InputManager::IsActionPressedByAny(InputManager::GetActionID("Up"))) {
@@ -2496,25 +2501,25 @@ void Application::DevMenu_AudioMenu() {
     if (InputManager::GetActionID("Right") != -1) {
         if (InputManager::IsActionPressedByAny(InputManager::GetActionID("Right")) || InputManager::IsActionHeldByAny(InputManager::GetActionID("Right"))) {
             switch (DevMenu.SubSelection) {
-            case 0:
-                if (Application::MasterVolume < 100) Application::MasterVolume++;
-                Application::SetMasterVolume(Application::MasterVolume);
-                Application::Settings->SetInteger("audio", "masterVolume", Application::MasterVolume);
-                Application::SaveSettings(); // TODO: See how performant this is
-                break;
-            case 1:
-                if (Application::MusicVolume < 100) Application::MusicVolume++;
-                Application::SetMusicVolume(Application::MusicVolume);
-                Application::Settings->SetInteger("audio", "musicVolume", Application::MusicVolume);
-                Application::SaveSettings(); // TODO: See how performant this is
-                break;
-            case 2:
-                if (Application::SoundVolume < 100) Application::SoundVolume++;
-                Application::SetSoundVolume(Application::SoundVolume);
-                Application::Settings->SetInteger("audio", "soundVolume", Application::SoundVolume);
-                Application::SaveSettings(); // TODO: See how performant this is
-                break;
-            default: break;
+                case 0:
+                    if (Application::MasterVolume < 100) Application::MasterVolume++;
+                    Application::SetMasterVolume(Application::MasterVolume);
+                    Application::Settings->SetInteger("audio", "masterVolume", Application::MasterVolume);
+                    Application::SaveSettings(); // TODO: See how performant this is
+                    break;
+                case 1:
+                    if (Application::MusicVolume < 100) Application::MusicVolume++;
+                    Application::SetMusicVolume(Application::MusicVolume);
+                    Application::Settings->SetInteger("audio", "musicVolume", Application::MusicVolume);
+                    Application::SaveSettings(); // TODO: See how performant this is
+                    break;
+                case 2:
+                    if (Application::SoundVolume < 100) Application::SoundVolume++;
+                    Application::SetSoundVolume(Application::SoundVolume);
+                    Application::Settings->SetInteger("audio", "soundVolume", Application::SoundVolume);
+                    Application::SaveSettings(); // TODO: See how performant this is
+                    break;
+                default: break;
             }
         }
     }

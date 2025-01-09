@@ -106,6 +106,7 @@ struct DeveloperMenu {
     int WindowAspect;
     bool ModsChanged;
     int PlayerListPos;
+    bool MusicPausedStore;
 };
 struct ViewableVariable {
     char Name[0x10];
