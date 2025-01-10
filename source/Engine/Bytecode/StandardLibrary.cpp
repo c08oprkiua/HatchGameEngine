@@ -16544,9 +16544,7 @@ VMValue Window_SetBorderless(int argCount, VMValue* args, Uint32 threadID) {
  */
 VMValue Window_SetVSync(int argCount, VMValue* args, Uint32 threadID) {
     CHECK_ARGCOUNT(1);
-    int vsync = GET_ARG(0, GetInteger);
-    Graphics::VsyncEnabled = !!vsync;
-    Graphics::SetVSync((SDL_bool)!vsync);
+    Graphics::SetVSync((SDL_bool)!GET_ARG(0, GetInteger));
     return NULL_VAL;
 }
 /***
