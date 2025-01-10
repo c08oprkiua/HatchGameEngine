@@ -58,6 +58,9 @@ public:
     static char             WindowTitle[256];
     static int              WindowWidth;
     static int              WindowHeight;
+    static int              WindowScale;
+    static bool             WindowFullscreen;
+    static bool             WindowBorderless;
     static int              DefaultMonitor;
     static Platforms        Platform;
     static char             EngineVersion[256];
@@ -98,6 +101,7 @@ public:
     static bool GetWindowFullscreen();
     static void SetWindowFullscreen(bool isFullscreen);
     static void SetWindowBorderless(bool isBorderless);
+    static void SetWindowVsync(bool vsync);
     static int GetKeyBind(int bind);
     static void SetKeyBind(int bind, int key);
     static void Run(int argc, char* args[]);

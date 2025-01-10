@@ -71,8 +71,12 @@ bool             Application::FirstFrame = true;
 
 SDL_Window*      Application::Window = NULL;
 char             Application::WindowTitle[256];
-int              Application::WindowWidth = 848;
-int              Application::WindowHeight = 480;
+int              Application::WindowWidth = 424;
+int              Application::WindowHeight = 240;
+int              Application::WindowScale = 2;
+bool             Application::WindowFullscreen = false;
+bool             Application::WindowBorderless = false;
+
 int              Application::DefaultMonitor = 0;
 
 char             Application::EngineVersion[256];
@@ -192,12 +196,16 @@ void Application::Init(int argc, char* args[]) {
     if (allowRetina)
         window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
+    Application::WindowScale = 2;
+    Application::Settings->GetInteger("display", "scale", &Application::WindowScale);
+    if (Application::WindowScale <= 0)
+        Application::WindowScale = 0;
+    if (Application::WindowScale > 5)
+        Application::WindowScale = 5;
+
     Application::Window = SDL_CreateWindow(NULL,
         SDL_WINDOWPOS_CENTERED_DISPLAY(defaultMonitor), SDL_WINDOWPOS_CENTERED_DISPLAY(defaultMonitor),
-        Application::WindowWidth, Application::WindowHeight, window_flags);
-    bool fullscreen = false;
-    Application::Settings->GetBool("display", "fullscreen", &fullscreen);
-    Application::SetWindowFullscreen(fullscreen);
+        Application::WindowWidth * Application::WindowScale, Application::WindowHeight * Application::WindowScale, window_flags);
 
     if (Application::Platform == Platforms::iOS) {
         SDL_SetWindowFullscreen(Application::Window, SDL_WINDOW_FULLSCREEN);
@@ -213,12 +221,14 @@ void Application::Init(int argc, char* args[]) {
         #endif
     }
     else {
-        bool fullscreen = false;
-        Application::Settings->GetBool("display", "fullscreen", &fullscreen);
+        Application::Settings->GetBool("display", "fullscreen", &Application::WindowFullscreen);
 
-        if (Application::GetWindowFullscreen() != fullscreen)
-            Application::SetWindowFullscreen(fullscreen);
+        if (Application::GetWindowFullscreen() != Application::WindowFullscreen)
+            Application::SetWindowFullscreen(Application::WindowFullscreen);
     }
+
+    Application::Settings->GetBool("display", "borderless", &Application::WindowBorderless);
+    Application::SetWindowBorderless(Application::WindowBorderless);
 
     for (int i = 1; i < argc; i++)
         Application::CmdLineArgs.push_back(StringUtils::Duplicate(args[i]));
@@ -651,6 +661,8 @@ bool Application::GetWindowFullscreen() {
 
 void Application::SetWindowFullscreen(bool isFullscreen) {
     SDL_SetWindowFullscreen(Application::Window, isFullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+    Application::WindowFullscreen = isFullscreen;
+    Application::Settings->SetBool("display", "fullscreen", Application::WindowFullscreen);
 
     int window_w, window_h;
     SDL_GetWindowSize(Application::Window, &window_w, &window_h);
@@ -659,7 +671,15 @@ void Application::SetWindowFullscreen(bool isFullscreen) {
 }
 
 void Application::SetWindowBorderless(bool isBorderless) {
+    Application::WindowBorderless = isBorderless;
+    Application::Settings->SetBool("display", "borderless", isBorderless);
     SDL_SetWindowBordered(Application::Window, (SDL_bool)(!isBorderless));
+}
+
+void Application::SetWindowVsync(bool vsync) {
+    Graphics::VsyncEnabled = vsync;
+    Application::Settings->SetBool("display", "vsync", vsync);
+    Graphics::SetVSync((SDL_bool)vsync);
 }
 
 int  Application::GetKeyBind(int bind) {
@@ -1160,7 +1180,7 @@ void Application::Run(int argc, char* args[]) {
 
     Scene::Restart();
     Application::UpdateWindowTitle();
-    Application::SetWindowSize(Application::WindowWidth, Application::WindowHeight);
+    Application::SetWindowSize(Application::WindowWidth * Application::WindowScale, Application::WindowHeight * Application::WindowScale);
 
     Graphics::Clear();
     Graphics::Present();
@@ -1532,7 +1552,7 @@ void Application::ReloadSettings(const char* filename) {
 void Application::InitSettings(const char* filename) {
     Application::LoadSettings(filename);
 
-    // NOTE: If no settings could be loaded, create settings with default values.
+    // If no settings could be loaded, create settings with default values.
     if (!Application::Settings) {
         Log::Print(Log::LOG_IMPORTANT, "Creating default config.ini.");
         Application::SetSettingsFilename("config.ini");
@@ -1540,7 +1560,9 @@ void Application::InitSettings(const char* filename) {
 
         Application::Settings->SetString("game", "modpacks", "Data.hatch");
 
+        Application::Settings->SetInteger("display", "scale", 2);
         Application::Settings->SetBool("display", "fullscreen", false);
+        Application::Settings->SetBool("display", "borderless", false);
         Application::Settings->SetBool("display", "vsync", false);
         Application::Settings->SetInteger("display", "defaultMonitor", 0);
         Application::Settings->SetBool("display", "retina", false);
@@ -1881,6 +1903,11 @@ void Application::CloseDevMenu() {
 
     Application::SaveSettings();
 
+    if (DevMenu.ModsChanged) {
+
+        return;
+    }
+
     AudioManager::AudioUnpauseAll();
     AudioManager::Lock();
     if (AudioManager::MusicStack.size() > 0) {
@@ -1932,14 +1959,10 @@ void Application::DevMenu_DrawMainMenu() {
 
 void Application::DevMenu_DrawTitleBar() {
     View view = Scene::Views[0];
-
-    // TODO: Should be CenterY when that exists
-    int y = (((int)Scene::Views[0].Height) / 2) - 94;
+    
     DrawRectangle(0.0, 16.0, view.Width, 54.0, 0x000000, 0xFF, true);
-    DrawDevString("Hatch Engine Developer Menu", (int)view.Width / 2, y, ALIGN_CENTER, true);
-
-    y += 15;
-    DrawDevString(GameTitleShort, (int)view.Width / 2, y, ALIGN_CENTER, true);
+    DrawDevString("Hatch Engine Developer Menu", (int)view.Width / 2, 26, ALIGN_CENTER, true);
+    DrawDevString(GameTitleShort, (int)view.Width / 2, 41, ALIGN_CENTER, true);
 }
 
 void Application::DevMenu_MainMenu() {
@@ -1949,9 +1972,9 @@ void Application::DevMenu_MainMenu() {
     View view = Scene::Views[0];
 
     if (DevMenu.ModsChanged)
-        DrawDevString("Application must restart upon resume.", (int)view.Width / 2, (((int)Scene::Views[0].Height) / 2) - 64, ALIGN_CENTER, true);
+        DrawDevString("Application must restart upon resume.", (int)view.Width / 2, 56, ALIGN_CENTER, true);
     else
-        DrawDevString(GameVersion, (int)view.Width / 2, (((int)Scene::Views[0].Height) / 2) - 64, ALIGN_CENTER, true);
+        DrawDevString(GameVersion, (int)view.Width / 2, 56, ALIGN_CENTER, true);
 
     const char* tooltip;
     switch (DevMenu.Selection) {
@@ -1959,7 +1982,7 @@ void Application::DevMenu_MainMenu() {
         case 1: tooltip = "Restart the current scene."; break;
         case 2: tooltip = "Navigate to a certain scene."; break;
         case 3: tooltip = "Adjust the application's settings."; break;
-        case 4: tooltip = "Not currently supported."; break;
+        case 4: tooltip = "Change the mods to load."; break;
         case 5: tooltip = "Close the appliation."; break;
     }
 
@@ -2047,9 +2070,7 @@ void Application::DevMenu_MainMenu() {
                 DevMenu.Timer = 1;
                 break;
             
-            case 5:
-                Running = false;
-                break;
+            case 5: Running = false; break;
         }
     }
     else if ((InputManager::GetActionID("B") != -1 ? InputManager::IsActionPressedByAny(InputManager::GetActionID("B")) : false)) {
@@ -2079,7 +2100,7 @@ void Application::DevMenu_CategorySelectMenu() {
     }
     selectedCategory[DevMenu.SubSelection] = true;
 
-    DrawDevString("Select Scene Category...", (int)view.Width / 2, (int)view.Height / 2 - 64, ALIGN_CENTER, true);
+    DrawDevString("Select Scene Category...", (int)view.Width / 2, 56, ALIGN_CENTER, true);
 
     int y = 93;
     for (size_t i = 0; i < 7; i++) {
@@ -2206,7 +2227,7 @@ void Application::DevMenu_SceneSelectMenu() {
 
     selectedScene[DevMenu.SubSelection - DevMenu.SubScrollPos] = true;
 
-    DrawDevString("Select Scene...", (int)view.Width / 2, (int)view.Height / 2 - 64, ALIGN_CENTER, true);
+    DrawDevString("Select Scene...", (int)view.Width / 2, 56, ALIGN_CENTER, true);
 
     int y = 93;
     SceneListCategory* list = &SceneInfo::Categories[DevMenu.ListPos];
@@ -2324,7 +2345,7 @@ void Application::DevMenu_SettingsMenu() {
 
     View view = Scene::Views[0];
 
-    DrawDevString("Change settings...", (int)view.Width / 2, (int)view.Height / 2 - 64, ALIGN_CENTER, true);
+    DrawDevString("Change settings...", (int)view.Width / 2, 7566, ALIGN_CENTER, true);
 
     int y = 93;
     for (int i = 0; i < 4; i++) {
@@ -2409,7 +2430,7 @@ void Application::DevMenu_AudioMenu() {
 
     View view = Scene::Views[0];
 
-    DrawDevString("Change audio settings...", (int)view.Width / 2, (int)view.Height / 2 - 64, ALIGN_CENTER, true);
+    DrawDevString("Change audio settings...", (int)view.Width / 2, 56, ALIGN_CENTER, true);
 
     DrawRectangle((view.Width / 2.0) - 140.0, 82.0, 280.0, 113.0, 0x000000, 0xFF, true);
 
@@ -2420,13 +2441,13 @@ void Application::DevMenu_AudioMenu() {
 
     float y = 98.0;
     for (int i = 0; i < 3; i++) {
-        DrawRectangle(view.Width - 190, y, 104.0, 15.0, 0x303030, 0xFF, true);
+        DrawRectangle((view.Width / 2.0) + 22.0, y, 104.0, 15.0, 0x303030, 0xFF, true);
         y += 16.0;
     }
 
-    DrawRectangle(view.Width - 188.0, 100.0, (float)Application::MasterVolume, 11.0, 0xFFFFFF, 0xFF, true);
-    DrawRectangle(view.Width - 188.0, 116.0, (float)Application::MusicVolume, 11.0, 0xFFFFFF, 0xFF, true);
-    DrawRectangle(view.Width - 188.0, 132.0, (float)Application::SoundVolume, 11.0, 0xFFFFFF, 0xFF, true);
+    DrawRectangle((view.Width / 2.0) + 24.0, 100.0, (float)Application::MasterVolume, 11.0, 0xFFFFFF, 0xFF, true);
+    DrawRectangle((view.Width / 2.0) + 24.0, 116.0, (float)Application::MusicVolume, 11.0, 0xFFFFFF, 0xFF, true);
+    DrawRectangle((view.Width / 2.0) + 24.0, 132.0, (float)Application::SoundVolume, 11.0, 0xFFFFFF, 0xFF, true);
 
     if (InputManager::GetActionID("Up") != -1) {
         if (InputManager::IsActionPressedByAny(InputManager::GetActionID("Up"))) {
@@ -2479,19 +2500,16 @@ void Application::DevMenu_AudioMenu() {
                     if (Application::MasterVolume > 0) Application::MasterVolume--;
                     Application::SetMasterVolume(Application::MasterVolume);
                     Application::Settings->SetInteger("audio", "masterVolume", Application::MasterVolume);
-                    Application::SaveSettings(); // TODO: See how performant this is
                     break;
                 case 1:
                     if (Application::MusicVolume > 0) Application::MusicVolume--;
                     Application::SetMusicVolume(Application::MusicVolume);
                     Application::Settings->SetInteger("audio", "musicVolume", Application::MusicVolume);
-                    Application::SaveSettings(); // TODO: See how performant this is
                     break;
                 case 2:
                     if (Application::SoundVolume > 0) Application::SoundVolume--;
                     Application::SetSoundVolume(Application::SoundVolume);
                     Application::Settings->SetInteger("audio", "soundVolume", Application::SoundVolume);
-                    Application::SaveSettings(); // TODO: See how performant this is
                     break;
                 default: break;
             }
@@ -2505,19 +2523,16 @@ void Application::DevMenu_AudioMenu() {
                     if (Application::MasterVolume < 100) Application::MasterVolume++;
                     Application::SetMasterVolume(Application::MasterVolume);
                     Application::Settings->SetInteger("audio", "masterVolume", Application::MasterVolume);
-                    Application::SaveSettings(); // TODO: See how performant this is
                     break;
                 case 1:
                     if (Application::MusicVolume < 100) Application::MusicVolume++;
                     Application::SetMusicVolume(Application::MusicVolume);
                     Application::Settings->SetInteger("audio", "musicVolume", Application::MusicVolume);
-                    Application::SaveSettings(); // TODO: See how performant this is
                     break;
                 case 2:
                     if (Application::SoundVolume < 100) Application::SoundVolume++;
                     Application::SetSoundVolume(Application::SoundVolume);
                     Application::Settings->SetInteger("audio", "soundVolume", Application::SoundVolume);
-                    Application::SaveSettings(); // TODO: See how performant this is
                     break;
                 default: break;
             }
@@ -2553,7 +2568,7 @@ void Application::DevMenu_ModsMenu() {
 
     selectedMod[DevMenu.SubSelection - DevMenu.SubScrollPos] = true;
 
-    DrawDevString("Select Mod...", (int)view.Width / 2, (int)view.Height / 2 - 64, ALIGN_CENTER, true);
+    DrawDevString("Select Mod...", (int)view.Width / 2, 56, ALIGN_CENTER, true);
 
     int y = 93;
     ModInfo* mod = &ResourceManager::Mods[DevMenu.ListPos];
