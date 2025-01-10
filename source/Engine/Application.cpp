@@ -676,12 +676,6 @@ void Application::SetWindowBorderless(bool isBorderless) {
     SDL_SetWindowBordered(Application::Window, (SDL_bool)(!isBorderless));
 }
 
-void Application::SetWindowVsync(bool vsync) {
-    Graphics::VsyncEnabled = vsync;
-    Application::Settings->SetBool("display", "vsync", vsync);
-    Graphics::SetVSync((SDL_bool)vsync);
-}
-
 int  Application::GetKeyBind(int bind) {
     return KeyBinds[bind];
 }

@@ -101,7 +101,6 @@ public:
     static bool GetWindowFullscreen();
     static void SetWindowFullscreen(bool isFullscreen);
     static void SetWindowBorderless(bool isBorderless);
-    static void SetWindowVsync(bool vsync);
     static int GetKeyBind(int bind);
     static void SetKeyBind(int bind, int key);
     static void Run(int argc, char* args[]);
