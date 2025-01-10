@@ -510,8 +510,6 @@ bool RSDKSceneReader::Read(Stream* r, const char* parentFolder) {
         int objectDefinitionCount = r->ReadByte();
         Log::Print(Log::LOG_VERBOSE, "Object Definition Count: %d", objectDefinitionCount);
 
-        Scene::AddManagers();
-
         int maxObjSlots = 0x940;
         Entity** objSlots = (Entity**)calloc(sizeof(Entity*), maxObjSlots);
         if (!objSlots) {

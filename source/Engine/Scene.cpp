@@ -1733,11 +1733,6 @@ void Scene::SpawnStaticObject(const char* objectName) {
         Scene::AddStatic(objectList, obj);
     }
 }
-void Scene::AddManagers() {
-    Scene::SpawnStaticObject("WindowManager");
-    Scene::SpawnStaticObject("InputManager");
-    Scene::SpawnStaticObject("FadeManager");
-}
 
 void Scene::FreePriorityLists() {
     if (Scene::PriorityLists) {

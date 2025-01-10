@@ -163,7 +163,6 @@ public:
     static ObjectList* GetObjectList(const char* objectName, bool callListLoadFunction);
     static ObjectList* GetObjectList(const char* objectName);
     static ObjectList* GetStaticObjectList(const char* objectName);
-    static void AddManagers();
     static void FreePriorityLists();
     static void InitPriorityLists();
     static void SetPriorityPerLayer(int count);
