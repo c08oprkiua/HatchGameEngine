@@ -141,7 +141,7 @@ public:
     static void AddToScene(Entity* obj);
     static void RemoveFromScene(Entity* obj);
     static void Clear(Entity** first, Entity** last, int* count);
-    static void AddStatic(ObjectList* objectList, Entity* obj);
+    static bool AddStatic(ObjectList* objectList, Entity* obj);
     static void AddDynamic(ObjectList* objectList, Entity* obj);
     static void DeleteRemoved(Entity* obj);
     static void OnEvent(Uint32 event);

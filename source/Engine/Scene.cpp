@@ -388,13 +388,6 @@ void Scene::Add(Entity** first, Entity** last, int* count, Entity* obj) {
 
     (*count)++;
 
-    // Add to proper list
-    if (!obj->List) {
-        Log::Print(Log::LOG_ERROR, "Entity %p has no list!", obj);
-        abort();
-    }
-    obj->List->Add(obj);
-
     Scene::AddToScene(obj);
 }
 void Scene::Remove(Entity** first, Entity** last, int* count, Entity* obj) {
@@ -418,18 +411,59 @@ void Scene::Remove(Entity** first, Entity** last, int* count, Entity* obj) {
     Scene::RemoveObject(obj);
 }
 void Scene::AddToScene(Entity* obj) {
-    obj->PrevSceneEntity = Scene::ObjectLast;
-    obj->NextSceneEntity = NULL;
+    // When the scene is loading, all entities are added to the end, because they will be sorted later.
+    // Also added to the end if NeedEntitySort is already set anyway.
+    if (NeedEntitySort || Initializing || Scene::ObjectFirst == NULL
+    || (Scene::ObjectLast != NULL && Scene::ObjectLast->UpdatePriority == obj->UpdatePriority)
+    ) {
+        obj->PrevSceneEntity = Scene::ObjectLast;
+        obj->NextSceneEntity = NULL;
 
-    if (obj->PrevSceneEntity)
-        obj->PrevSceneEntity->NextSceneEntity = obj;
-    if (!Scene::ObjectFirst)
-        Scene::ObjectFirst = obj;
+        if (obj->PrevSceneEntity)
+            obj->PrevSceneEntity->NextSceneEntity = obj;
+        if (!Scene::ObjectFirst)
+            Scene::ObjectFirst = obj;
 
-    Scene::ObjectLast = obj;
+        Scene::ObjectLast = obj;
+    }
+    else {
+        Entity* prevObj;
+
+        if (obj->UpdatePriority < 0) {
+            prevObj = Scene::ObjectFirst;
+
+            while (prevObj->NextSceneEntity != NULL
+            && prevObj->NextSceneEntity->UpdatePriority < obj->UpdatePriority) {
+                prevObj = prevObj->NextSceneEntity;
+            }
+        }
+        else {
+            prevObj = Scene::ObjectLast;
+
+            while (prevObj->PrevSceneEntity != NULL
+            && prevObj->PrevSceneEntity->UpdatePriority > obj->UpdatePriority) {
+                prevObj = prevObj->PrevSceneEntity;
+            }
+        }
+
+        if (prevObj->NextSceneEntity) {
+            obj->NextSceneEntity = prevObj->NextSceneEntity;
+            prevObj->NextSceneEntity->PrevSceneEntity = obj;
+        }
+        else {
+            Scene::ObjectLast = obj;
+            obj->NextSceneEntity = NULL;
+        }
+        prevObj->NextSceneEntity = obj;
+        obj->PrevSceneEntity = prevObj;
+    }
+
     Scene::ObjectCount++;
 }
 void Scene::RemoveFromScene(Entity* obj) {
+    if (obj->NextSceneEntity == NULL && obj->PrevSceneEntity == NULL)
+        return;
+
     if (Scene::ObjectFirst == obj)
         Scene::ObjectFirst = obj->NextSceneEntity;
     if (Scene::ObjectLast == obj)
@@ -479,12 +513,28 @@ void Scene::Clear(Entity** first, Entity** last, int* count) {
 }
 
 // Object management
-void Scene::AddStatic(ObjectList* objectList, Entity* obj) {
+bool Scene::AddStatic(ObjectList* objectList, Entity* obj) {
     Scene::Add(&Scene::StaticObjectFirst, &Scene::StaticObjectLast, &Scene::StaticObjectCount, obj);
+
     obj->Dynamic = false;
+
+    // Add to proper list
+    if (obj->List) {
+        obj->List->Add(obj);
+    }
+    else {
+        Log::Print(Log::LOG_ERROR, "Entity %d has no list!", obj->SlotID);
+
+        Scene::Remove(&Scene::StaticObjectFirst, &Scene::StaticObjectLast, &Scene::StaticObjectCount, obj);
+
+        return false;
+    }
+
+    return true;
 }
 void Scene::AddDynamic(ObjectList* objectList, Entity* obj) {
     Scene::Add(&Scene::DynamicObjectFirst, &Scene::DynamicObjectLast, &Scene::DynamicObjectCount, obj);
+
     obj->Dynamic = true;
 }
 void Scene::DeleteRemoved(Entity* obj) {
