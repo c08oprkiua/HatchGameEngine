@@ -45,6 +45,9 @@ public:
     static void RSDK_SetRandSeed(int key);
     static int RSDK_RandomInteger(int min, int max);
     static int RSDK_RandomIntegerSeeded(int min, int max, int seed);
+    static int ToFixed(float val);
+    static int ToFixed(int val);
+    static float FromFixed(int val);
 };
 
 #endif /* ENGINE_MATH_MATH_H */

@@ -49,13 +49,6 @@ struct Sensor {
     int Angle;
 };
 
-struct CollisionSensor {
-    float   X;
-    float   Y;
-    int     Collided;
-    int     Angle;
-};
-
 struct ObjectListPerformanceStats {
     double AverageTime = 0.0;
     double AverageItemCount = 0;

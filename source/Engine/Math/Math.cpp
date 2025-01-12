@@ -308,3 +308,14 @@ int Math::RSDK_RandomIntegerSeeded(int min, int max, int seed) {
     else
         return max;
 }
+
+// Conversion functions
+int Math::ToFixed(float val) {
+    return (int)(val * 65536.0);
+}
+int Math::ToFixed(int val) {
+    return val << 16;
+}
+float Math::FromFixed(int val) {
+    return (float)(val / 65536.0);
+}

@@ -114,20 +114,19 @@ public:
     static char                      CurrentCategory[256];
     static int                       ActiveCategory;
     static int                       DebugMode;
-    static float                     CollisionTolerance;
+    static int                       CollisionTolerance;
     static bool                      UseCollisionOffset;
-    static float                     CollisionMaskAir;
+    static int                       CollisionMaskAir;
     static CollisionBox              CollisionOuter;
     static CollisionBox              CollisionInner;
     static Entity*                   CollisionEntity;
-    static CollisionSensor           Sensors[6];
-    static float                     CollisionMinimumDistance;
-    static float                     LowCollisionTolerance;
-    static float                     HighCollisionTolerance;
+    static Sensor                    Sensors[6];
+    static int                       CollisionMinimumDistance;
+    static int                       LowCollisionTolerance;
+    static int                       HighCollisionTolerance;
     static int                       FloorAngleTolerance;
     static int                       WallAngleTolerance;
     static int                       RoofAngleTolerance;
-    static bool                      ShowHitboxes;
     static int                       DebugHitboxCount;
     static DebugHitboxInfo           DebugHitboxList[DEBUG_HITBOX_COUNT];
 
@@ -163,6 +162,7 @@ public:
     static ObjectList* GetObjectList(const char* objectName, bool callListLoadFunction);
     static ObjectList* GetObjectList(const char* objectName);
     static ObjectList* GetStaticObjectList(const char* objectName);
+    static void AddManagers();
     static void FreePriorityLists();
     static void InitPriorityLists();
     static void SetPriorityPerLayer(int count);
@@ -195,20 +195,20 @@ public:
     static bool CheckObjectCollisionBox(Entity* thisEntity, CollisionBox* thisHitbox, Entity* otherEntity, CollisionBox* otherHitbox, bool setValues);
     static bool CheckObjectCollisionPlatform(Entity* thisEntity, CollisionBox* thisHitbox, Entity* otherEntity, CollisionBox* otherHitbox, bool setValues);
     static bool ObjectTileCollision(Entity* entity, int cLayers, int cMode, int cPlane, int xOffset, int yOffset, bool setPos);
-    static bool ObjectTileGrip(Entity* entity, int cLayers, int cMode, int cPlane, int xOffset, int yOffset, float tolerance);
+    static bool ObjectTileGrip(Entity* entity, int cLayers, int cMode, int cPlane, int xOffset, int yOffset, int tolerance);
     static void ProcessObjectMovement(Entity* entity, CollisionBox* outerBox, CollisionBox* innerBox);
-    static void ProcessPathGrip();
     static void ProcessAirCollision_Down();
     static void ProcessAirCollision_Up();
-    static void SetPathGripSensors(CollisionSensor* sensors);
-    static void FindFloorPosition(CollisionSensor* sensor);
-    static void FindLWallPosition(CollisionSensor* sensor);
-    static void FindRoofPosition(CollisionSensor* sensor);
-    static void FindRWallPosition(CollisionSensor* sensor);
-    static void FloorCollision(CollisionSensor* sensor);
-    static void LWallCollision(CollisionSensor* sensor);
-    static void RoofCollision(CollisionSensor* sensor);
-    static void RWallCollision(CollisionSensor* sensor);
+    static void ProcessPathGrip();
+    static void SetPathGripSensors(Sensor* cSensors);
+    static void FindFloorPosition(Sensor* sensor);
+    static void FindLWallPosition(Sensor* sensor);
+    static void FindRoofPosition(Sensor* sensor);
+    static void FindRWallPosition(Sensor* sensor);
+    static void FloorCollision(Sensor* sensor);
+    static void LWallCollision(Sensor* sensor);
+    static void RoofCollision(Sensor* sensor);
+    static void RWallCollision(Sensor* sensor);
 };
 
 #endif /* ENGINE_SCENE_H */

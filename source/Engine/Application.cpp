@@ -197,7 +197,8 @@ void Application::Init(int argc, char* args[]) {
         window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
     Application::WindowScale = 2;
-    Application::Settings->GetInteger("display", "scale", &Application::WindowScale);
+    if (!Application::Settings->GetInteger("display", "scale", &Application::WindowScale))
+        Application::Settings->SetInteger("display", "scale", Application::WindowScale);
     if (Application::WindowScale <= 0)
         Application::WindowScale = 0;
     if (Application::WindowScale > 5)
@@ -221,13 +222,19 @@ void Application::Init(int argc, char* args[]) {
         #endif
     }
     else {
-        Application::Settings->GetBool("display", "fullscreen", &Application::WindowFullscreen);
+        if (!Application::Settings->GetBool("display", "fullscreen", &Application::WindowFullscreen)) {
+            Application::Settings->SetBool("display", "fullscreen", false);
+            Application::WindowFullscreen = false;
+        }
 
         if (Application::GetWindowFullscreen() != Application::WindowFullscreen)
             Application::SetWindowFullscreen(Application::WindowFullscreen);
     }
 
-    Application::Settings->GetBool("display", "borderless", &Application::WindowBorderless);
+    if (!Application::Settings->GetBool("display", "borderless", &Application::WindowBorderless)) {
+        Application::Settings->SetBool("display", "borderless", false);
+        Application::WindowBorderless = false;
+    }
     Application::SetWindowBorderless(Application::WindowBorderless);
 
     for (int i = 1; i < argc; i++)
@@ -1614,7 +1621,10 @@ void Application::InitSettings(const char* filename) {
     AutomaticPerformanceSnapshotFrameTimeThreshold = apsFrameTimeThreshold;
     AutomaticPerformanceSnapshotMinInterval = apsMinInterval;
 
-    Application::Settings->GetBool("display", "vsync", &Graphics::VsyncEnabled);
+    if (!Application::Settings->GetBool("display", "vsync", &Graphics::VsyncEnabled)) {
+        Application::Settings->SetBool("display", "vsync", true);
+        Graphics::VsyncEnabled = true;
+    }
     Application::Settings->GetInteger("display", "multisample", &Graphics::MultisamplingEnabled);
     int defaultMonitor = 0;
     Application::Settings->GetInteger("display", "defaultMonitor", &defaultMonitor);
