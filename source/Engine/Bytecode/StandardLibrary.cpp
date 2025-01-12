@@ -1,3 +1,4 @@
+#include "Engine/Diagnostics/Log.h"
 #include <Engine/Bytecode/StandardLibrary.h>
 
 #include <Engine/Graphics.h>
@@ -15668,11 +15669,11 @@ VMValue Video_Close(int argCount, VMValue* args, Uint32 threadID) {
 
     if (!resource)
         return NULL_VAL;
-    delete resource;
 
-    if (!resource->AsMedia)
-        return NULL_VAL;
-    delete resource->AsMedia;
+    if (resource->AsMedia)
+        delete resource->AsMedia;
+
+    delete resource;
 
     return NULL_VAL;
 }
@@ -16742,7 +16743,7 @@ VMValue XML_Parse(int argCount, VMValue* args, Uint32 threadID) {
 
             // XMLParser will realloc text, so the stream needs to free it.
             stream->owns_memory = true;
-            stream->Close();
+            XMLParser::Free(xmlRoot);
         }
         else
             Memory::Free(text);

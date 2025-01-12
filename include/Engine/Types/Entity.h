@@ -102,6 +102,7 @@ public:
     Entity* PrevSceneEntity = NULL;
     Entity* NextSceneEntity = NULL;
 
+    virtual ~Entity() = default;
     void ApplyMotion();
     void Animate();
     void SetAnimation(int animation, int frame);

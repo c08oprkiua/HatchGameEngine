@@ -511,7 +511,7 @@ bool RSDKSceneReader::Read(Stream* r, const char* parentFolder) {
         Log::Print(Log::LOG_VERBOSE, "Object Definition Count: %d", objectDefinitionCount);
 
         int maxObjSlots = 0x940;
-        Entity** objSlots = (Entity**)calloc(sizeof(Entity*), maxObjSlots);
+        Entity** objSlots = (Entity**)calloc(maxObjSlots, sizeof(Entity*));
         if (!objSlots) {
             Log::Print(Log::LOG_ERROR, "Could not allocate memory for object slots!");
             r->Close();
