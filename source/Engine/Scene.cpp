@@ -3608,14 +3608,12 @@ bool Scene::CheckObjectCollisionPlatform(Entity* thisEntity, CollisionBox* thisH
 }
 
 bool Scene::ObjectTileCollision(Entity* entity, int cLayers, int cMode, int cPlane, int xOffset, int yOffset, bool setPos) {
-    return false;
-}
-
-bool Scene::ObjectTileGrip(Entity* entity, int cLayers, int cMode, int cPlane, int xOffset, int yOffset, int tolerance) {
-    int layerID = 1;
+    int layerID   = 1;
     bool collided = false;
-    int posX = xOffset + (int)std::floor(entity->X);
-    int posY = yOffset + (int)std::floor(entity->Y);
+    int posX      = Math::FromFixed(Math::ToFixed(xOffset) + Math::ToFixed(entity->X));
+    int posY      = Math::FromFixed(Math::ToFixed(yOffset) + Math::ToFixed(entity->Y));
+
+    TileConfig* tileCfgBase = Scene::TileCfg[CollisionEntity->CollisionPlane];
 
     int solid = 0;
     switch (cMode) {
@@ -3624,151 +3622,430 @@ bool Scene::ObjectTileGrip(Entity* entity, int cLayers, int cMode, int cPlane, i
         case CMODE_FLOOR:
             solid = cPlane ? (1 << 14) : (1 << 12);
 
-            for (int l = 0; l < LAYER_COUNT; ++l, layerID <<= 1) {
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
                 if (cLayers & layerID) {
-                    TileLayer* layer = &tileLayers[l];
-                    int colX = posX - layer->X;
-                    int colY = posY - layer->Y;
-                    int cy = (colY & -TILE_SIZE) - TILE_SIZE;
-                    if (colX >= 0 && colX < TILE_SIZE * layer->xsize) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cy = (colY & -TileHeight) - TileHeight;
+                    if (colX >= 0 && colX < TileWidth * layer.Width) {
                         for (int i = 0; i < 3; ++i) {
-                            if (cy >= 0 && cy < TILE_SIZE * layer->ysize) {
-                                uint16 tile = layer->layout[(colX >> 4) + ((cy / TILE_SIZE) << layer->widthShift)];
-                                if (tile < 0xFFFF && tile & solid) {
-                                    int mask = collisionMasks[cPlane][tile & 0xFFF].floorMasks[colX & 0xF];
-                                    int ty = cy + mask;
-                                    if (mask < 0xFF) {
-                                        if (abs(colY - ty) <= tolerance) {
-                                            collided = true;
-                                            colY = ty;
-                                        }
-                                        i = 3;
+                            if (cy >= 0 && cy < TileHeight * layer.Height) {
+                                Uint32 tile = layer.Tiles[(colX / TileWidth) + ((cy / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colT = tileCfg->CollisionTop;
+
+                                    int ty =  cy + colT[colX & 0xF];
+                                    if (colY >= ty && abs(colY - ty) <= 14) {
+                                        collided = true;
+                                        colY     = ty;
+                                        i        = 3;
                                     }
                                 }
                             }
-                            cy += TILE_SIZE;
+                            cy += TileHeight;
                         }
                     }
-                    posX = layer->X + colX;
-                    posY = layer->Y + colY;
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
                 }
             }
 
-            if (collided)
-                entity->Y = TO_FIXED(posY) - yOffset;
+            if (setPos && collided)
+                entity->Y = Math::FromFixed(Math::ToFixed((posY))) - yOffset; // TODO: Check this
             return collided;
 
         case CMODE_LWALL:
             solid = cPlane ? (1 << 15) : (1 << 13);
 
-            for (int l = 0; l < LAYER_COUNT; ++l, layerID <<= 1) {
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
                 if (cLayers & layerID) {
-                    TileLayer* layer = &tileLayers[l];
-                    int colX = posX - layer->X;
-                    int colY = posY - layer->Y;
-                    int cx = (colX & -TILE_SIZE) - TILE_SIZE;
-                    if (colY >= 0 && colY < TILE_SIZE * layer->ysize) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cx = (colX & -TileWidth) - TileWidth;
+                    if (colY >= 0 && colY < TileHeight * layer.Height) {
                         for (int i = 0; i < 3; ++i) {
-                            if (cx >= 0 && cx < TILE_SIZE * layer->xsize) {
-                                uint16 tile = layer->layout[(cx >> 4) + ((colY / TILE_SIZE) << layer->widthShift)];
-                                if (tile < 0xFFFF && tile & solid) {
-                                    int mask = collisionMasks[cPlane][tile & 0xFFF].lWallMasks[colY & 0xF];
-                                    int tx = cx + mask;
-                                    if (mask < 0xFF) {
-                                        if (abs(colX - tx) <= tolerance) {
-                                            collided = true;
-                                            colX = tx;
-                                        }
-                                        i = 3;
+                            if (cx >= 0 && cx < TileWidth * layer.Width) {
+                                Uint32 tile = layer.Tiles[(cx / TileWidth) + ((colY / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colL = tileCfg->CollisionLeft;
+
+                                    int tx = cx + colL[colY & 0xF];
+                                    if (colX >= tx && abs(colX - tx) <= 14) {
+                                        collided = true;
+                                        colX     = tx;
+                                        i        = 3;
                                     }
                                 }
                             }
-                            cx += TILE_SIZE;
+                            cx += TileWidth;
                         }
                     }
-                    posX = layer->X + colX;
-                    posY = layer->Y + colY;
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
                 }
             }
 
-            if (collided)
-                entity->X = TO_FIXED(posX) - xOffset;
+            if (setPos && collided)
+                entity->X = Math::FromFixed(Math::ToFixed((posX))) - xOffset; // TODO: Check this
             return collided;
 
         case CMODE_ROOF:
             solid = cPlane ? (1 << 15) : (1 << 13);
 
-            for (int l = 0; l < LAYER_COUNT; ++l, layerID <<= 1) {
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
                 if (cLayers & layerID) {
-                    TileLayer* layer = &tileLayers[l];
-                    int colX = posX - layer->X;
-                    int colY = posY - layer->Y;
-                    int cy = (colY & -TILE_SIZE) + TILE_SIZE;
-                    if (colX >= 0 && colX < TILE_SIZE * layer->xsize) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cy = (colY & -TileHeight) + TileHeight;
+                    if (colX >= 0 && colX < TileWidth * layer.Width) {
                         for (int i = 0; i < 3; ++i) {
-                            if (cy >= 0 && cy < TILE_SIZE * layer->ysize) {
-                                uint16 tile = layer->layout[(colX >> 4) + ((cy / TILE_SIZE) << layer->widthShift)];
-                                if (tile < 0xFFFF && tile & solid) {
-                                    int mask = collisionMasks[cPlane][tile & 0xFFF].roofMasks[colX & 0xF];
-                                    int ty = cy + mask;
-                                    if (mask < 0xFF) {
-                                        if (abs(colY - ty) <= tolerance) {
-                                            collided = true;
-                                            colY = ty;
-                                        }
-                                        i = 3;
+                            if (cy >= 0 && cy < TileHeight * layer.Height) {
+                                Uint32 tile = layer.Tiles[(colX / TileWidth) + ((cy / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colB = tileCfg->CollisionBottom;
+
+                                    int ty = cy + colB[colX & 0xF];
+                                    if (colY <= ty && abs(colY - ty) <= 14) {
+                                        collided = true;
+                                        colY     = ty;
+                                        i        = 3;
                                     }
                                 }
                             }
-                            cy -= TILE_SIZE;
+                            cy -= TileHeight;
                         }
                     }
-                    posX = layer->X + colX;
-                    posY = layer->Y + colY;
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
                 }
             }
 
             if (collided)
-                entity->Y = TO_FIXED(posY) - yOffset;
+                entity->Y = Math::FromFixed(Math::ToFixed((posY))) - yOffset; // TODO: Check this
             return collided;
 
         case CMODE_RWALL:
             solid = cPlane ? (1 << 15) : (1 << 13);
 
-            for (int l = 0; l < LAYER_COUNT; ++l, layerID <<= 1) {
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
                 if (cLayers & layerID) {
-                    TileLayer* layer = &tileLayers[l];
-                    int colX = posX - layer->X;
-                    int colY = posY - layer->Y;
-                    int cx = (colX & -TILE_SIZE) + TILE_SIZE;
-                    if (colY >= 0 && colY < TILE_SIZE * layer->ysize) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cx = (colX & -TileWidth) - TileWidth;
+                    if (colY >= 0 && colY < TileHeight * layer.Height) {
                         for (int i = 0; i < 3; ++i) {
-                            if (cx >= 0 && cx < TILE_SIZE * layer->xsize) {
-                                uint16 tile = layer->layout[(cx >> 4) + ((colY / TILE_SIZE) << layer->widthShift)];
-                                if (tile < 0xFFFF && tile & solid) {
-                                    int mask = collisionMasks[cPlane][tile & 0xFFF].rWallMasks[colY & 0xF];
-                                    int tx = cx + mask;
+                            if (cx >= 0 && cx < TileWidth * layer.Width) {
+                                Uint32 tile = layer.Tiles[(cx / TileWidth) + ((colY / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colR = tileCfg->CollisionRight;
+
+                                    int tx = cx + colR[colY & 0xF];
+                                    if (colX <= tx && abs(colX - tx) <= 14) {
+                                        collided = true;
+                                        colX     = tx;
+                                        i        = 3;
+                                    }
+                                }
+                            }
+                            cx -= TileWidth;
+                        }
+                    }
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
+                }
+            }
+
+            if (collided)
+                entity->X = Math::FromFixed(Math::ToFixed((posX))) - xOffset; // TODO: Check this
+            return collided;
+    }
+}
+
+bool Scene::ObjectTileGrip(Entity* entity, int cLayers, int cMode, int cPlane, int xOffset, int yOffset, int tolerance) {
+    int layerID   = 1;
+    bool collided = false;
+    int posX      = Math::FromFixed(Math::ToFixed(xOffset) + Math::ToFixed(entity->X));
+    int posY      = Math::FromFixed(Math::ToFixed(yOffset) + Math::ToFixed(entity->Y));
+
+    TileConfig* tileCfgBase = Scene::TileCfg[CollisionEntity->CollisionPlane];
+
+    int solid = 0;
+    switch (cMode) {
+        default: return false;
+
+        case CMODE_FLOOR:
+            solid = cPlane ? (1 << 14) : (1 << 12);
+
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
+                if (cLayers & layerID) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cy   = (colY & -TileHeight) - TileHeight;
+                    if (colX >= 0 && colX < TileWidth * layer.Width) {
+                        for (int i = 0; i < 3; ++i) {
+                            if (cy >= 0 && cy < TileHeight * layer.Height) {
+                                Uint32 tile = layer.Tiles[(colX / TileWidth) + ((cy / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colT = tileCfg->CollisionTop;
+
+                                    int mask = colT[colX & 0xF];
+
+                                    int ty        = cy + mask;
                                     if (mask < 0xFF) {
-                                        if (abs(colX - tx) <= tolerance) {
+                                        if (abs(colY - ty) <= tolerance) {
                                             collided = true;
-                                            colX = tx;
+                                            colY     = ty;
                                         }
                                         i = 3;
                                     }
                                 }
                             }
-                            cx -= TILE_SIZE;
+                            cy += TileHeight;
                         }
                     }
-                    posX = layer->X + colX;
-                    posY = layer->Y + colY;
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
                 }
             }
 
             if (collided)
-                entity->X = TO_FIXED(posX) - xOffset;
+                entity->Y = Math::FromFixed(Math::ToFixed((posY))) - yOffset; // TODO: Check this
             return collided;
-        }
+
+        case CMODE_LWALL:
+            solid = cPlane ? (1 << 15) : (1 << 13);
+
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
+                if (cLayers & layerID) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cx   = (colX & -TileWidth) - TileWidth;
+                    if (colY >= 0 && colY < TileHeight * layer.Height) {
+                        for (int i = 0; i < 3; ++i) {
+                            if (cx >= 0 && cx < TileWidth * layer.Width) {
+                                Uint32 tile = layer.Tiles[(cx / TileWidth) + ((colY / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colL         = tileCfg->CollisionLeft;
+
+                                    int mask = colL[colY & 0xF];
+                                    int tx = cx + mask;
+                                    if (mask < 0xFF) {
+                                        if (abs(colX - tx) <= tolerance) {
+                                            collided = true;
+                                            colX     = tx;
+                                        }
+                                        i = 3;
+                                    }
+                                }
+                            }
+                            cx += TileWidth;
+                        }
+                    }
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
+                }
+            }
+
+            if (collided)
+                entity->X = Math::FromFixed(Math::ToFixed((posX))) - xOffset; // TODO: Check this
+            return collided;
+
+        case CMODE_ROOF:
+            solid = cPlane ? (1 << 15) : (1 << 13);
+
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
+                if (cLayers & layerID) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cy   = (colY & -TileHeight) + TileHeight;
+                    if (colX >= 0 && colX < TileWidth * layer.Width) {
+                        for (int i = 0; i < 3; ++i) {
+                            if (cy >= 0 && cy < TileHeight * layer.Height) {
+                                Uint32 tile = layer.Tiles[(colX / TileWidth) + ((cy / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision  = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colB         = tileCfg->CollisionBottom;
+
+                                    int mask = colB[colX & 0xF];
+                                    int ty   = cy + mask;
+                                    if (mask < 0xFF) {
+                                        if (abs(colY - ty) <= tolerance) {
+                                            collided = true;
+                                            colY     = ty;
+                                        }
+                                        i = 3;
+                                    }
+                                }
+                            }
+                            cy -= TileHeight;
+                        }
+                    }
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
+                }
+            }
+
+            if (collided)
+                entity->Y = Math::FromFixed(Math::ToFixed((posY))) - yOffset; // TODO: Check this
+            return collided;
+
+        case CMODE_RWALL:
+            solid = cPlane ? (1 << 15) : (1 << 13);
+
+            for (size_t l = 0; l < Layers.size(); ++l, layerID <<= 1) {
+                if (cLayers & layerID) {
+                    SceneLayer layer = Layers[l];
+
+                    if (!(layer.Flags & SceneLayer::FLAGS_COLLIDEABLE))
+                        continue;
+
+                    int colX = posX - layer.OffsetX;
+                    int colY = posY - layer.OffsetY;
+                    int cx = (colX & -TileWidth) - TileWidth;
+                    if (colY >= 0 && colY < TileHeight * layer.Height) {
+                        for (int i = 0; i < 3; ++i) {
+                            if (cx >= 0 && cx < TileWidth * layer.Width) {
+                                Uint32 tile = layer.Tiles[(cx / TileWidth) + ((colY / TileHeight) << layer.WidthInBits)];
+
+                                if ((tile & TILE_IDENT_MASK) != EmptyTile) {
+                                    int tileFlipOffset = (((!!(tile & TILE_FLIPY_MASK)) << 1) | (!!(tile & TILE_FLIPX_MASK))) * TileCount;
+
+                                    int collisionA = (tile & TILE_COLLA_MASK) >> 28;
+                                    int collisionB = (tile & TILE_COLLB_MASK) >> 26;
+                                    int collision = CollisionEntity->CollisionPlane ? collisionB : collisionA;
+
+                                    tile &= TILE_IDENT_MASK;
+
+                                    TileConfig* tileCfg = &tileCfgBase[tile + tileFlipOffset];
+                                    Uint8* colR = tileCfg->CollisionRight;
+
+                                    int mask = colR[colY & 0xF];
+                                    int tx   = cx + mask;
+                                    if (mask < 0xFF) {
+                                        if (abs(colX - tx) <= tolerance) {
+                                            collided = true;
+                                            colX     = tx;
+                                        }
+                                        i = 3;
+                                    }
+                                }
+                            }
+                            cx -= TileWidth;
+                        }
+                    }
+                    posX = layer.OffsetX + colX;
+                    posY = layer.OffsetY + colY;
+                }
+            }
+
+            if (collided)
+                entity->X = Math::FromFixed(Math::ToFixed((posX))) - xOffset; // TODO: Check this
+            return collided;
+    }
 }
 
 void Scene::ProcessObjectMovement(Entity* entity, CollisionBox* outerBox, CollisionBox* innerBox) {
