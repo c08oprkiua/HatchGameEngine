@@ -3053,20 +3053,24 @@ VMValue Draw_VideoPartSized(int argCount, VMValue* args, Uint32 threadID) {
  * \param y (Number): Y position of where to draw the tile.
  * \param flipX (Integer): Whether or not to flip the tile horizontally.
  * \param flipY (Integer): Whether or not to flip the tile vertically.
+ * \paramOpt scaleX (Number): Scale of the tile on the X axis.
+ * \paramOpt scaleY (Number): Scale of the tile on the Y axis.
  * \ns Draw
  */
 VMValue Draw_Tile(int argCount, VMValue* args, Uint32 threadID) {
-    CHECK_ARGCOUNT(5);
+    CHECK_AT_LEAST_ARGCOUNT(5);
 
     Uint32 id = GET_ARG(0, GetInteger);
-    int x = (int)GET_ARG(1, GetDecimal) + 8;
-    int y = (int)GET_ARG(2, GetDecimal) + 8;
+    float scaleX = GET_ARG_OPT(5, GetDecimal, 1.0f);
+    float scaleY = GET_ARG_OPT(6, GetDecimal, 1.0f);
+    int x = (int)GET_ARG(1, GetDecimal) + ((Scene::TileWidth / 2) * scaleX);
+    int y = (int)GET_ARG(2, GetDecimal) + ((Scene::TileHeight / 2) * scaleY);
     int flipX = GET_ARG(3, GetInteger);
     int flipY = GET_ARG(4, GetInteger);
 
     TileSpriteInfo info;
     if (id < Scene::TileSpriteInfos.size() && (info = Scene::TileSpriteInfos[id]).Sprite != NULL) {
-        Graphics::DrawSprite(info.Sprite, info.AnimationIndex, info.FrameIndex, x, y, flipX, flipY, 1.0f, 1.0f, 0.0f);
+        Graphics::DrawSprite(info.Sprite, info.AnimationIndex, info.FrameIndex, x, y, flipX, flipY, scaleX, scaleY, 0.0f);
     }
     return NULL_VAL;
 }
