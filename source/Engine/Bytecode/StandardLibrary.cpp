@@ -1750,9 +1750,9 @@ VMValue Collision_ObjectTileCollision(int argCount, VMValue* args, Uint32 thread
  * \param cLayers (Bitfield): Which layers the entity can collide with.
  * \param cMode (Integer): Collision mode of the entity (floor, left wall, roof, right wall).
  * \param cPlane (Integer): Collision plane to get the collision of (A or B).
- * \param xOffset (Decimal): How far from the entity's X value to start from.
- * \param yOffset (Decimal): How far from the entity's Y value to start from.
- * \param tolerance (Decimal): How far of a tolerance the entity should check for.
+ * \param xOffset (Number): How far from the entity's X value to start from.
+ * \param yOffset (Number): How far from the entity's Y value to start from.
+ * \param tolerance (Number): How far of a tolerance the entity should check for.
  * \return Returns whether to grip the instance.
  * \ns Collision
  */
@@ -1764,7 +1764,7 @@ VMValue Collision_ObjectTileGrip(int argCount, VMValue* args, Uint32 threadID) {
     int cPlane = GET_ARG(3, GetInteger);
     int xOffset = (int)GET_ARG(4, GetDecimal);
     int yOffset = (int)GET_ARG(5, GetDecimal);
-    float tolerance = GET_ARG(6, GetDecimal);
+    int tolerance = (int)GET_ARG(6, GetDecimal);
 
     auto ent = (Entity*)entity->EntityPtr;
 
