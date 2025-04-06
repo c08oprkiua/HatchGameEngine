@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/Values.h>
 
 #include <Engine/Diagnostics/Log.h>
@@ -184,3 +186,5 @@ void Values::PrintObject(PrintBuffer* buffer, VMValue value, int indent, bool pr
 		buffer_printf(buffer, "<unknown object type 0x%02X>", OBJECT_TYPE(value));
 	}
 }
+
+#endif //ENABLE_ANGELSCRIPT

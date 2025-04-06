@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/Compiler.h>
 #include <Engine/Bytecode/ScriptEntity.h>
 #include <Engine/Bytecode/StandardLibrary.h>
@@ -1847,3 +1849,5 @@ VMValue ScriptEntity::VM_StopAllSounds(int argCount, VMValue* args, Uint32 threa
 	}
 	return NULL_VAL;
 }
+
+#endif

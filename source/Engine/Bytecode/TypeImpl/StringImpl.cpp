@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/ScriptManager.h>
 #include <Engine/Bytecode/StandardLibrary.h>
 #include <Engine/Bytecode/TypeImpl/StringImpl.h>
@@ -89,3 +91,5 @@ bool StringImpl::VM_ElementSet(Obj* object, VMValue at, VMValue value, Uint32 th
     return true;
 }
 #endif
+
+#endif //ENABLE_ANGELSCRIPT

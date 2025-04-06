@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/Types.h>
 
 #include <Engine/Bytecode/Compiler.h>
@@ -463,3 +465,5 @@ int Chunk::AddConstant(VMValue value) {
 	Constants->push_back(value);
 	return (int)Constants->size() - 1;
 }
+
+#endif //ENABLE_ANGELSCRIPT

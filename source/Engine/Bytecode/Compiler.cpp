@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -4516,3 +4518,5 @@ void Compiler::Dispose() {
 	}
 	Memory::Free(Rules);
 }
+
+#endif //ENABLE_ANGELSCRIPT

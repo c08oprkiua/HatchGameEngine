@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/SourceFileMap.h>
 
 #include <Engine/Bytecode/Compiler.h>
@@ -315,3 +317,5 @@ void SourceFileMap::Dispose() {
 	SourceFileMap::Checksums = NULL;
 	SourceFileMap::ClassMap = NULL;
 }
+
+#endif //ENABLE_ANGELSCRIPT

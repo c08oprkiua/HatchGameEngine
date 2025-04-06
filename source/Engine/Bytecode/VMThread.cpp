@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/Compiler.h>
 #include <Engine/Bytecode/ScriptEntity.h>
 #include <Engine/Bytecode/ScriptManager.h>
@@ -3187,3 +3189,5 @@ VMValue VMThread::Value_TypeOf() {
 	return OBJECT_VAL(CopyString(valueType));
 }
 // #endregion
+
+#endif //ENABLE_ANGELSCRIPT

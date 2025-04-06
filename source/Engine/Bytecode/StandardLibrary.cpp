@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include "Engine/Diagnostics/Log.h"
 #include <Engine/Bytecode/StandardLibrary.h>
 
@@ -20565,3 +20567,5 @@ void StandardLibrary::Link() {
 #undef DEF_ENUM_NAMED
 }
 void StandardLibrary::Dispose() {}
+
+#endif //ENABLE_ANGELSCRIPT

@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/ScriptManager.h>
 #include <Engine/Bytecode/StandardLibrary.h>
 #include <Engine/Bytecode/TypeImpl/MaterialImpl.h>
@@ -265,3 +267,5 @@ bool MaterialImpl::VM_PropertySet(Obj* object, Uint32 hash, VMValue value, Uint3
 }
 
 #undef SET_TEXTURE
+
+#endif //ENABLE_ANGELSCRIPT

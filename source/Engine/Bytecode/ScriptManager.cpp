@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/Bytecode.h>
 #include <Engine/Bytecode/GarbageCollector.h>
 #include <Engine/Bytecode/ScriptEntity.h>
@@ -1027,3 +1029,5 @@ void ScriptManager::LoadClasses() {
 	ScriptManager::ForceGarbageCollection();
 }
 // #endregion
+
+#endif //ENABLE_ANGELSCRIPT

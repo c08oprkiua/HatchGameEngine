@@ -50,6 +50,8 @@ endif()
 option(ENABLE_SCRIPT_COMPILING "Enable script compiling" ON)
 option(ENABLE_USING_VM_FUNCPTRS "Enable function-pointer based VM" ON)
 
+option(ENABLE_ANGELSCRIPT "Enable experimental AngelScript replacement for HSL" ON)
+
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
   option(ENABLE_VM_DEBUGGING "Enable VM debugging" ON)
   option(DEVELOPER_MODE "Developer mode" ON)

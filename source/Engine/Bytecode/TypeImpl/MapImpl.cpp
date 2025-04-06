@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/ScriptManager.h>
 #include <Engine/Bytecode/StandardLibrary.h>
 #include <Engine/Bytecode/TypeImpl/MapImpl.h>
@@ -66,3 +68,5 @@ VMValue MapImpl::VM_IteratorValue(int argCount, VMValue* args, Uint32 threadID) 
 
 	return NULL_VAL;
 }
+
+#endif //ENABLE_ANGELSCRIPT

@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/Bytecode.h>
 #include <Engine/IO/MemoryStream.h>
 #include <Engine/Utilities/StringUtils.h>
@@ -225,3 +227,5 @@ void Bytecode::Write(Stream* stream, const char* sourceFilename, HashMap<Token>*
 		stream->WriteBytes((void*)sourceFilename, strlen(sourceFilename) + 1);
 	}
 }
+
+#endif //ENABLE_ANGELSCRIPT

@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/ScriptManager.h>
 #include <Engine/Bytecode/StandardLibrary.h>
 #include <Engine/Bytecode/TypeImpl/ArrayImpl.h>
@@ -51,3 +53,5 @@ VMValue ArrayImpl::VM_IteratorValue(int argCount, VMValue* args, Uint32 threadID
 
 	return (*array->Values)[index];
 }
+
+#endif

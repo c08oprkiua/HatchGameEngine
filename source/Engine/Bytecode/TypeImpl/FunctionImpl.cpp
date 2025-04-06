@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/ScriptManager.h>
 #include <Engine/Bytecode/StandardLibrary.h>
 #include <Engine/Bytecode/TypeImpl/FunctionImpl.h>
@@ -24,3 +26,5 @@ VMValue FunctionImpl::VM_Bind(int argCount, VMValue* args, Uint32 threadID) {
 
 	return OBJECT_VAL(NewBoundMethod(args[1], function));
 }
+
+#endif //ENABLE_ANGELSCRIPT

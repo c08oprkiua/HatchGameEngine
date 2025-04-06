@@ -1,3 +1,5 @@
+#ifndef ENABLE_ANGELSCRIPT
+
 #include <Engine/Bytecode/GarbageCollector.h>
 
 #include <Engine/Bytecode/Compiler.h>
@@ -287,3 +289,5 @@ void GarbageCollector::BlackenObject(Obj* object) {
 		break;
 	}
 }
+
+#endif //ENABLE_ANGELSCRIPT
