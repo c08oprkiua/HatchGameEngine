@@ -19,6 +19,63 @@
 
 #define GROW_CAPACITY(val) ((val) < 8 ? 8 : val << 1)
 
+bool VMValue::ValueFalsey() const {
+	if (Type == VAL_NULL) {
+		return true;
+	}
+
+	switch (Type) {
+	case VAL_LINKED_INTEGER:
+	case VAL_INTEGER:
+		return as.Integer == 0;
+	case VAL_LINKED_DECIMAL:
+	case VAL_DECIMAL:
+		return as.Decimal == 0.0f;
+	case VAL_OBJECT:
+		return false;
+	}
+	return false;
+}
+
+bool VMValue::ValuesEqual(const VMValue &with) const {
+	if (Type == VAL_LINKED_INTEGER) {
+		goto SKIP_CHECK;
+	}
+	if (Type == VAL_LINKED_DECIMAL) {
+		goto SKIP_CHECK;
+	}
+	if (Type == VAL_LINKED_INTEGER) {
+		goto SKIP_CHECK;
+	}
+	if (Type == VAL_LINKED_DECIMAL) {
+		goto SKIP_CHECK;
+	}
+
+	if (Type != with.Type) {
+		return false;
+	}
+
+SKIP_CHECK:
+
+	switch (Type) {
+	case VAL_LINKED_INTEGER:
+	case VAL_INTEGER:
+		//return AS_INTEGER(a) == AS_INTEGER(with);
+
+	case VAL_LINKED_DECIMAL:
+	case VAL_DECIMAL:
+		//return AS_DECIMAL(a) == AS_DECIMAL(with);
+
+	case VAL_OBJECT:
+		//return AS_OBJECT(a) == AS_OBJECT(with);
+		return false;
+
+	case VAL_NULL:
+		return true;
+	}
+	return false;
+}
+
 static Obj* AllocateObject(size_t size, ObjType type) {
 	// Only do this when allocating more memory
 	GarbageCollector::GarbageSize += size;
@@ -32,6 +89,7 @@ static Obj* AllocateObject(size_t size, ObjType type) {
 
 	return object;
 }
+
 static ObjString* AllocateString(char* chars, size_t length, Uint32 hash) {
 	ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
 	Memory::Track(string, "NewString");
@@ -46,9 +104,11 @@ ObjString* TakeString(char* chars, size_t length) {
 	Uint32 hash = FNV1A::EncryptData(chars, length);
 	return AllocateString(chars, length, hash);
 }
+
 ObjString* TakeString(char* chars) {
 	return TakeString(chars, strlen(chars));
 }
+
 ObjString* CopyString(const char* chars, size_t length) {
 	Uint32 hash = FNV1A::EncryptData(chars, length);
 
@@ -58,9 +118,11 @@ ObjString* CopyString(const char* chars, size_t length) {
 
 	return AllocateString(heapChars, length, hash);
 }
+
 ObjString* CopyString(const char* chars) {
 	return CopyString(chars, strlen(chars));
 }
+
 ObjString* CopyString(ObjString* string) {
 	char* heapChars = ALLOCATE(char, string->Length + 1);
 	memcpy(heapChars, string->Chars, string->Length);
@@ -68,11 +130,13 @@ ObjString* CopyString(ObjString* string) {
 
 	return AllocateString(heapChars, string->Length, string->Hash);
 }
+
 ObjString* CopyString(std::filesystem::path path) {
 	std::string asStr = path.u8string();
 	const char* cStr = asStr.c_str();
 	return CopyString(cStr);
 }
+
 ObjString* AllocString(size_t length) {
 	char* heapChars = ALLOCATE(char, length + 1);
 	heapChars[length] = '\0';
@@ -93,12 +157,14 @@ ObjFunction* NewFunction() {
 	function->Chunk.Init();
 	return function;
 }
+
 ObjNative* NewNative(NativeFn function) {
 	ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
 	Memory::Track(native, "NewNative");
 	native->Function = function;
 	return native;
 }
+
 ObjUpvalue* NewUpvalue(VMValue* slot) {
 	ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
 	upvalue->Closed = NULL_VAL;
@@ -106,6 +172,7 @@ ObjUpvalue* NewUpvalue(VMValue* slot) {
 	upvalue->Next = NULL;
 	return upvalue;
 }
+
 ObjClosure* NewClosure(ObjFunction* function) {
 	ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->UpvalueCount);
 	for (int i = 0; i < function->UpvalueCount; i++) {
@@ -118,6 +185,7 @@ ObjClosure* NewClosure(ObjFunction* function) {
 	closure->UpvalueCount = function->UpvalueCount;
 	return closure;
 }
+
 ObjClass* NewClass(Uint32 hash) {
 	ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
 	Memory::Track(klass, "NewClass");
@@ -136,6 +204,7 @@ ObjClass* NewClass(Uint32 hash) {
 	klass->Parent = NULL;
 	return klass;
 }
+
 ObjInstance* NewInstance(ObjClass* klass) {
 	ObjInstance* instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
 	Memory::Track(instance, "NewInstance");
@@ -146,6 +215,7 @@ ObjInstance* NewInstance(ObjClass* klass) {
 	instance->PropertySet = NULL;
 	return instance;
 }
+
 ObjBoundMethod* NewBoundMethod(VMValue receiver, ObjFunction* method) {
 	ObjBoundMethod* bound = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
 	Memory::Track(bound, "NewBoundMethod");
@@ -153,6 +223,7 @@ ObjBoundMethod* NewBoundMethod(VMValue receiver, ObjFunction* method) {
 	bound->Method = method;
 	return bound;
 }
+
 ObjArray* NewArray() {
 	ObjArray* array = ALLOCATE_OBJ(ObjArray, OBJ_ARRAY);
 	Memory::Track(array, "NewArray");
@@ -160,6 +231,7 @@ ObjArray* NewArray() {
 	array->Values = new vector<VMValue>();
 	return array;
 }
+
 ObjMap* NewMap() {
 	ObjMap* map = ALLOCATE_OBJ(ObjMap, OBJ_MAP);
 	Memory::Track(map, "NewMap");
@@ -168,6 +240,7 @@ ObjMap* NewMap() {
 	map->Keys = new HashMap<char*>(NULL, 4);
 	return map;
 }
+
 ObjStream* NewStream(Stream* streamPtr, bool writable) {
 	ObjStream* stream = ALLOCATE_OBJ(ObjStream, OBJ_STREAM);
 	Memory::Track(stream, "NewStream");
@@ -176,6 +249,7 @@ ObjStream* NewStream(Stream* streamPtr, bool writable) {
 	stream->Closed = false;
 	return stream;
 }
+
 ObjNamespace* NewNamespace(Uint32 hash) {
 	ObjNamespace* ns = ALLOCATE_OBJ(ObjNamespace, OBJ_NAMESPACE);
 	Memory::Track(ns, "NewNamespace");
@@ -185,6 +259,7 @@ ObjNamespace* NewNamespace(Uint32 hash) {
 	ns->InUse = false;
 	return ns;
 }
+
 ObjEnum* NewEnum(Uint32 hash) {
 	ObjEnum* enumeration = ALLOCATE_OBJ(ObjEnum, OBJ_ENUM);
 	Memory::Track(enumeration, "NewEnum");
@@ -193,6 +268,7 @@ ObjEnum* NewEnum(Uint32 hash) {
 	enumeration->Fields = new Table(NULL, 16);
 	return enumeration;
 }
+
 ObjModule* NewModule() {
 	ObjModule* module = ALLOCATE_OBJ(ObjModule, OBJ_MODULE);
 	Memory::Track(module, "NewModule");
@@ -201,6 +277,7 @@ ObjModule* NewModule() {
 	module->SourceFilename = NULL;
 	return module;
 }
+
 ObjMaterial* NewMaterial(Material* materialPtr) {
 	ObjMaterial* material = ALLOCATE_OBJ(ObjMaterial, OBJ_MATERIAL);
 	Memory::Track(material, "NewMaterial");
@@ -209,7 +286,8 @@ ObjMaterial* NewMaterial(Material* materialPtr) {
 	return material;
 }
 
-bool ValuesEqual(VMValue a, VMValue b) {
+
+bool ValuesEqual(const VMValue &a, const VMValue &b) {
 	if (a.Type != b.Type) {
 		return false;
 	}
@@ -224,6 +302,7 @@ bool ValuesEqual(VMValue a, VMValue b) {
 	}
 	return false;
 }
+
 
 const char* GetTypeString(Uint32 type) {
 	switch (type) {
@@ -240,6 +319,7 @@ const char* GetTypeString(Uint32 type) {
 	}
 	return "Unknown Type";
 }
+
 const char* GetObjectTypeString(Uint32 type) {
 	switch (type) {
 	case OBJ_BOUND_METHOD:
@@ -275,6 +355,7 @@ const char* GetObjectTypeString(Uint32 type) {
 	}
 	return "Unknown Object Type";
 }
+
 const char* GetValueTypeString(VMValue value) {
 	if (value.Type == VAL_OBJECT) {
 		return GetObjectTypeString(OBJECT_TYPE(value));
@@ -295,6 +376,7 @@ void Chunk::Init() {
 #endif
 	Constants = new vector<VMValue>();
 }
+
 void Chunk::Alloc() {
 	if (!Code) {
 		Code = (Uint8*)Memory::TrackedMalloc("Chunk::Code", sizeof(Uint8) * Capacity);
@@ -312,6 +394,7 @@ void Chunk::Alloc() {
 
 	OwnsMemory = true;
 }
+
 void Chunk::Free() {
 	if (OwnsMemory) {
 		if (Code) {
@@ -342,11 +425,13 @@ void Chunk::Free() {
 	}
 #endif
 }
+
 #if USING_VM_FUNCPTRS
 #define OPCASE(op) \
 	case op: \
 		func = &VMThread::OPFUNC_##op; \
 		break
+
 void Chunk::SetupOpfuncs() {
 	if (!OpcodeCount) {
 		// try to get it manually thru iterating it (for
@@ -451,6 +536,7 @@ void Chunk::SetupOpfuncs() {
 }
 #undef OPCASE
 #endif
+
 void Chunk::Write(Uint8 byte, int line) {
 	if (Capacity < Count + 1) {
 		int oldCapacity = Capacity;
@@ -461,6 +547,7 @@ void Chunk::Write(Uint8 byte, int line) {
 	Lines[Count] = line;
 	Count++;
 }
+
 int Chunk::AddConstant(VMValue value) {
 	Constants->push_back(value);
 	return (int)Constants->size() - 1;

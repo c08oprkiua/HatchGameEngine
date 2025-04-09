@@ -2314,6 +2314,7 @@ void VMThread::InvokeForEntity(VMValue value, int argCount) {
 	ReturnFrame = lastReturnFrame;
 	StackTop = lastStackTop;
 }
+
 VMValue VMThread::RunEntityFunction(ObjFunction* function, int argCount) {
 	VMValue* lastStackTop = StackTop;
 	int lastReturnFrame = ReturnFrame;

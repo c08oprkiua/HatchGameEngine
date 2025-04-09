@@ -50,8 +50,6 @@ endif()
 option(ENABLE_SCRIPT_COMPILING "Enable script compiling" ON)
 option(ENABLE_USING_VM_FUNCPTRS "Enable function-pointer based VM" ON)
 
-option(ENABLE_ANGELSCRIPT "Enable experimental AngelScript replacement for HSL" ON)
-
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
   option(ENABLE_VM_DEBUGGING "Enable VM debugging" ON)
   option(DEVELOPER_MODE "Developer mode" ON)
@@ -71,6 +69,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   endif()
 endif()
 
+option(ENABLE_ANGELSCRIPT "Enable experimental AngelScript replacement for HSL" ON)
+option(ENABLE_HSL "Enable Hatch Script Language as the scripting language" OFF)
 option(USE_OPEN_ASSET_IMPORT_LIBRARY "Use Open Asset Import Library" ON)
 option(USE_FREETYPE_LIBRARY "Use FreeType" OFF)
 
@@ -185,6 +185,14 @@ else()
       set(OPENGL_LIBRARIES "${CMAKE_CURRENT_LIST_DIR}/meta/win/lib/mingw/${TOOLCHAIN_PREFIX}/libglew32.a;-lgdi32;-lopengl32")
     endif()
   endif()
+endif()
+
+include_directories("${CMAKE_CURRENT_LIST_DIR}/source/Libraries/AngelScript/angelscript/include/")
+
+if(ENABLE_ANGELSCRIPT)
+  add_definitions(-DENABLE_ANGELSCRIPT)
+else()
+  add_definitions(-DENABLE_HSL)
 endif()
 
 # Add needed directories

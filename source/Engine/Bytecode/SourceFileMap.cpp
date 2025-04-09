@@ -273,6 +273,7 @@ void SourceFileMap::CheckForUpdate() {
 	list.shrink_to_fit();
 #endif
 }
+
 void SourceFileMap::AddToList(Compiler* compiler, Uint32 filenameHash) {
 	for (size_t h = 0; h < compiler->ClassHashList.size(); h++) {
 		Uint32 classHash = compiler->ClassHashList[h];

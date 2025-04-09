@@ -1786,6 +1786,7 @@ ObjectList* Scene::NewObjectList(const char* objectName) {
 	}
 	return objectList;
 }
+
 void Scene::AddStaticClass() {
 	StaticObjectList = Scene::NewObjectList("Static");
 	if (!StaticObjectList->SpawnFunction) {

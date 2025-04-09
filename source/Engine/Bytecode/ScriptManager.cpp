@@ -131,6 +131,7 @@ void ScriptManager::Init() {
 	StringImpl::Init();
 	MaterialImpl::Init();
 }
+
 #ifdef VM_DEBUG
 Uint32 ScriptManager::GetBranchLimit() {
 	int branchLimit = 0;
@@ -156,6 +157,7 @@ void ScriptManager::DisposeGlobalValueTable(HashMap<VMValue>* globals) {
 	globals->Clear();
 	delete globals;
 }
+
 void ScriptManager::Dispose() {
 	// NOTE: Remove GC-able values from these tables so they may be
 	// cleaned up.
@@ -215,6 +217,7 @@ void ScriptManager::Dispose() {
 
 	SDL_DestroyMutex(GlobalLock);
 }
+
 void ScriptManager::RemoveNonGlobalableValue(Uint32 hash, VMValue value) {
 	if (IS_OBJECT(value)) {
 		switch (OBJECT_TYPE(value)) {
@@ -233,6 +236,7 @@ void ScriptManager::RemoveNonGlobalableValue(Uint32 hash, VMValue value) {
 		}
 	}
 }
+
 void ScriptManager::FreeNativeValue(Uint32 hash, VMValue value) {
 	if (IS_OBJECT(value)) {
 		switch (OBJECT_TYPE(value)) {
@@ -245,6 +249,7 @@ void ScriptManager::FreeNativeValue(Uint32 hash, VMValue value) {
 		}
 	}
 }
+
 void ScriptManager::FreeFunction(ObjFunction* function) {
 	/*
 	printf("OBJ_FUNCTION: %p (%s)\n", function,
@@ -267,10 +272,12 @@ void ScriptManager::FreeFunction(ObjFunction* function) {
 
 	FREE_OBJ(function, ObjFunction);
 }
+
 void ScriptManager::FreeModule(ObjModule* module) {
 	delete module->Functions;
 	delete module->Locals;
 }
+
 void ScriptManager::FreeClass(ObjClass* klass) {
 	// Subfunctions are already freed as a byproduct of the
 	// ModuleList, so just do natives.
@@ -287,6 +294,7 @@ void ScriptManager::FreeClass(ObjClass* klass) {
 
 	FREE_OBJ(klass, ObjClass);
 }
+
 void ScriptManager::FreeEnumeration(ObjEnum* enumeration) {
 	// An enumeration does not own its values, so it's not allowed
 	// to free them.
@@ -298,6 +306,7 @@ void ScriptManager::FreeEnumeration(ObjEnum* enumeration) {
 
 	FREE_OBJ(enumeration, ObjEnum);
 }
+
 void ScriptManager::FreeNamespace(ObjNamespace* ns) {
 	// A namespace does not own its values, so it's not allowed
 	// to free them.
@@ -309,6 +318,7 @@ void ScriptManager::FreeNamespace(ObjNamespace* ns) {
 
 	FREE_OBJ(ns, ObjNamespace);
 }
+
 void ScriptManager::FreeString(ObjString* string) {
 	if (string->Chars != NULL) {
 		Memory::Free(string->Chars);
@@ -317,6 +327,7 @@ void ScriptManager::FreeString(ObjString* string) {
 
 	FREE_OBJ(string, ObjString);
 }
+
 void ScriptManager::FreeGlobalValue(Uint32 hash, VMValue value) {
 	if (IS_OBJECT(value)) {
 		Obj* object = AS_OBJECT(value);
@@ -462,12 +473,13 @@ bool ScriptManager::ValuesSortaEqual(VMValue a, VMValue b) {
 	if (IS_BOUND_METHOD(a) && IS_BOUND_METHOD(b)) {
 		ObjBoundMethod* abm = AS_BOUND_METHOD(a);
 		ObjBoundMethod* bbm = AS_BOUND_METHOD(b);
-		return ValuesEqual(abm->Receiver, bbm->Receiver) && abm->Method == bbm->Method;
+		return ::ValuesEqual(abm->Receiver, bbm->Receiver) && abm->Method == bbm->Method;
 	}
 
 	return ScriptManager::ValuesEqual(a, b);
 }
-bool ScriptManager::ValuesEqual(VMValue a, VMValue b) {
+
+bool ScriptManager::ValuesEqual(const VMValue &a, const VMValue &b) {
 	if (a.Type == VAL_LINKED_INTEGER) {
 		goto SKIP_CHECK;
 	}
@@ -803,6 +815,7 @@ bool ScriptManager::RunBytecode(BytecodeContainer bytecodeContainer, Uint32 file
 
 	return true;
 }
+
 bool ScriptManager::CallFunction(char* functionName) {
 	if (!Globals->Exists(functionName)) {
 		return false;
@@ -817,6 +830,7 @@ bool ScriptManager::CallFunction(char* functionName) {
 	Threads[0].RunEntityFunction(function, 0);
 	return true;
 }
+
 Entity* ScriptManager::SpawnObject(const char* objectName) {
 	ObjClass* klass = GetObjectClass(objectName);
 	if (!klass) {

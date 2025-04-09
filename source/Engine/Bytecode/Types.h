@@ -41,6 +41,15 @@ struct VMValue {
 		int* LinkedInteger;
 		float* LinkedDecimal;
 	} as;
+
+	bool ValueFalsey() const;
+	bool ValuesEqual(const VMValue &with) const;
+	bool ValuesSortaEqual(const VMValue &with) const;
+	int CastValueAsInteger() const;
+
+	void CastValueAsDecimal();
+
+	VMValue DelinkValue();
 };
 
 #ifdef USING_VM_FUNCPTRS
@@ -189,6 +198,13 @@ typedef bool (*StructSetFn)(Obj* object, VMValue at, VMValue value, Uint32 threa
 #define AS_MODULE(value) ((ObjModule*)AS_OBJECT(value))
 #define AS_MATERIAL(value) ((ObjMaterial*)AS_OBJECT(value))
 
+#define MAX_OBJ_TYPE (OBJ_MATERIAL + 1)
+
+#define FREE_OBJ(obj, type) \
+	assert(GarbageCollector::GarbageSize >= sizeof(type)); \
+	GarbageCollector::GarbageSize -= sizeof(type); \
+	Memory::Free(obj)
+
 enum ObjType {
 	OBJ_BOUND_METHOD,
 	OBJ_CLASS,
@@ -207,186 +223,6 @@ enum ObjType {
 	OBJ_MATERIAL
 };
 
-#define MAX_OBJ_TYPE (OBJ_MATERIAL + 1)
-
-typedef HashMap<VMValue> Table;
-
-struct Obj {
-	ObjType Type;
-	bool IsDark;
-	struct ObjClass* Class;
-	struct Obj* Next;
-};
-struct ObjString {
-	Obj Object;
-	size_t Length;
-	char* Chars;
-	Uint32 Hash;
-};
-struct ObjModule {
-	Obj Object;
-	vector<struct ObjFunction*>* Functions;
-	vector<VMValue>* Locals;
-	ObjString* SourceFilename;
-};
-struct ObjFunction {
-	Obj Object;
-	int Arity;
-	int MinArity;
-	int UpvalueCount;
-	struct Chunk Chunk;
-	ObjModule* Module;
-	ObjString* Name;
-	ObjString* ClassName;
-	Uint32 NameHash;
-};
-struct ObjNative {
-	Obj Object;
-	NativeFn Function;
-};
-struct ObjUpvalue {
-	Obj Object;
-	VMValue* Value;
-	VMValue Closed;
-	struct ObjUpvalue* Next;
-};
-struct ObjClosure {
-	Obj Object;
-	ObjFunction* Function;
-	ObjUpvalue** Upvalues;
-	int UpvalueCount;
-};
-struct ObjClass {
-	Obj Object;
-	ObjString* Name;
-	Uint32 Hash;
-	Table* Methods;
-	Table* Fields; // Keep this as a pointer, so that a new table
-		// isn't created when passing an ObjClass value
-		// around
-	ValueGetFn PropertyGet;
-	ValueSetFn PropertySet;
-	StructGetFn ElementGet;
-	StructSetFn ElementSet;
-	VMValue Initializer;
-	ClassNewFn NewFn;
-	Uint8 Type;
-	Uint32 ParentHash;
-	ObjClass* Parent;
-};
-struct ObjInstance {
-	Obj Object;
-	Table* Fields;
-	void* EntityPtr;
-	ValueGetFn PropertyGet;
-	ValueSetFn PropertySet;
-};
-struct ObjBoundMethod {
-	Obj Object;
-	VMValue Receiver;
-	ObjFunction* Method;
-};
-struct ObjArray {
-	Obj Object;
-	vector<VMValue>* Values;
-};
-struct ObjMap {
-	Obj Object;
-	HashMap<VMValue>* Values;
-	HashMap<char*>* Keys;
-};
-struct ObjStream {
-	Obj Object;
-	Stream* StreamPtr;
-	bool Writable;
-	bool Closed;
-};
-struct ObjNamespace {
-	Obj Object;
-	ObjString* Name;
-	Uint32 Hash;
-	Table* Fields;
-	bool InUse;
-};
-struct ObjEnum {
-	Obj Object;
-	ObjString* Name;
-	Uint32 Hash;
-	Table* Fields;
-};
-struct ObjMaterial {
-	Obj Object;
-	Material* MaterialPtr;
-};
-
-ObjString* TakeString(char* chars, size_t length);
-ObjString* TakeString(char* chars);
-ObjString* CopyString(const char* chars, size_t length);
-ObjString* CopyString(const char* chars);
-ObjString* CopyString(ObjString* string);
-ObjString* CopyString(std::filesystem::path path);
-ObjString* AllocString(size_t length);
-ObjFunction* NewFunction();
-ObjNative* NewNative(NativeFn function);
-ObjUpvalue* NewUpvalue(VMValue* slot);
-ObjClosure* NewClosure(ObjFunction* function);
-ObjClass* NewClass(Uint32 hash);
-ObjInstance* NewInstance(ObjClass* klass);
-ObjBoundMethod* NewBoundMethod(VMValue receiver, ObjFunction* method);
-ObjArray* NewArray();
-ObjMap* NewMap();
-ObjStream* NewStream(Stream* streamPtr, bool writable);
-ObjNamespace* NewNamespace(Uint32 hash);
-ObjEnum* NewEnum(Uint32 hash);
-ObjModule* NewModule();
-ObjMaterial* NewMaterial(Material* material);
-
-#define FREE_OBJ(obj, type) \
-	assert(GarbageCollector::GarbageSize >= sizeof(type)); \
-	GarbageCollector::GarbageSize -= sizeof(type); \
-	Memory::Free(obj)
-
-bool ValuesEqual(VMValue a, VMValue b);
-
-static inline bool IsObjectType(VMValue value, ObjType type) {
-	return IS_OBJECT(value) && AS_OBJECT(value)->Type == type;
-}
-
-static inline bool HasInitializer(ObjClass* klass) {
-	return !IS_NULL(klass->Initializer);
-}
-
-struct WithIter {
-	void* entity;
-	void* entityNext;
-	int index;
-	void* registry;
-	Uint8 receiverSlot;
-};
-
-struct CallFrame {
-	ObjFunction* Function;
-	Uint8* IP;
-	Uint8* IPLast;
-	Uint8* IPStart;
-	VMValue* Slots;
-	ObjModule* Module;
-
-#ifdef VM_DEBUG
-	Uint32 BranchCount;
-#endif
-
-#ifdef USING_VM_FUNCPTRS
-	OpcodeFunc* OpcodeFStart;
-	int* IPToOpcode;
-	OpcodeFunc* OpcodeFunctions;
-#endif
-
-	VMValue WithReceiverStack[16];
-	VMValue* WithReceiverStackTop = WithReceiverStack;
-	WithIter WithIteratorStack[16];
-	WithIter* WithIteratorStackTop = WithIteratorStack;
-};
 enum OpCode : uint8_t {
 	OP_ERROR = 0,
 	OP_CONSTANT,
@@ -483,5 +319,194 @@ enum OpCode : uint8_t {
 
 	OP_LAST
 };
+
+typedef HashMap<VMValue> Table;
+
+struct Obj {
+	ObjType Type;
+	bool IsDark;
+	struct ObjClass* Class;
+	struct Obj* Next;
+};
+
+struct ObjString {
+	Obj Object;
+	size_t Length;
+	char* Chars;
+	Uint32 Hash;
+};
+
+struct ObjModule {
+	Obj Object;
+	vector<struct ObjFunction*>* Functions;
+	vector<VMValue>* Locals;
+	ObjString* SourceFilename;
+};
+
+struct ObjFunction {
+	Obj Object;
+	int Arity;
+	int MinArity;
+	int UpvalueCount;
+	struct Chunk Chunk;
+	ObjModule* Module;
+	ObjString* Name;
+	ObjString* ClassName;
+	Uint32 NameHash;
+};
+
+struct ObjNative {
+	Obj Object;
+	NativeFn Function;
+};
+
+struct ObjUpvalue {
+	Obj Object;
+	VMValue* Value;
+	VMValue Closed;
+	struct ObjUpvalue* Next;
+};
+
+struct ObjClosure {
+	Obj Object;
+	ObjFunction* Function;
+	ObjUpvalue** Upvalues;
+	int UpvalueCount;
+};
+
+struct ObjClass {
+	Obj Object;
+	ObjString* Name;
+	Uint32 Hash;
+	Table* Methods;
+	Table* Fields; // Keep this as a pointer, so that a new table
+		// isn't created when passing an ObjClass value
+		// around
+	ValueGetFn PropertyGet;
+	ValueSetFn PropertySet;
+	StructGetFn ElementGet;
+	StructSetFn ElementSet;
+	VMValue Initializer;
+	ClassNewFn NewFn;
+	Uint8 Type;
+	Uint32 ParentHash;
+	ObjClass* Parent;
+};
+
+struct ObjInstance {
+	Obj Object;
+	Table* Fields;
+	void* EntityPtr;
+	ValueGetFn PropertyGet;
+	ValueSetFn PropertySet;
+};
+
+struct ObjBoundMethod {
+	Obj Object;
+	VMValue Receiver;
+	ObjFunction* Method;
+};
+
+struct ObjArray {
+	Obj Object;
+	vector<VMValue>* Values;
+};
+
+struct ObjMap {
+	Obj Object;
+	HashMap<VMValue>* Values;
+	HashMap<char*>* Keys;
+};
+
+struct ObjStream {
+	Obj Object;
+	Stream* StreamPtr;
+	bool Writable;
+	bool Closed;
+};
+
+struct ObjNamespace {
+	Obj Object;
+	ObjString* Name;
+	Uint32 Hash;
+	Table* Fields;
+	bool InUse;
+};
+
+struct ObjEnum {
+	Obj Object;
+	ObjString* Name;
+	Uint32 Hash;
+	Table* Fields;
+};
+
+struct ObjMaterial {
+	Obj Object;
+	Material* MaterialPtr;
+};
+
+struct WithIter {
+	void* entity;
+	void* entityNext;
+	int index;
+	void* registry;
+	Uint8 receiverSlot;
+};
+
+struct CallFrame {
+	ObjFunction* Function;
+	Uint8* IP;
+	Uint8* IPLast;
+	Uint8* IPStart;
+	VMValue* Slots;
+	ObjModule* Module;
+
+#ifdef VM_DEBUG
+	Uint32 BranchCount;
+#endif
+
+#ifdef USING_VM_FUNCPTRS
+	OpcodeFunc* OpcodeFStart;
+	int* IPToOpcode;
+	OpcodeFunc* OpcodeFunctions;
+#endif
+
+	VMValue WithReceiverStack[16];
+	VMValue* WithReceiverStackTop = WithReceiverStack;
+	WithIter WithIteratorStack[16];
+	WithIter* WithIteratorStackTop = WithIteratorStack;
+};
+
+ObjString* TakeString(char* chars, size_t length);
+ObjString* TakeString(char* chars);
+ObjString* CopyString(const char* chars, size_t length);
+ObjString* CopyString(const char* chars);
+ObjString* CopyString(ObjString* string);
+ObjString* CopyString(std::filesystem::path path);
+ObjString* AllocString(size_t length);
+ObjFunction* NewFunction();
+ObjNative* NewNative(NativeFn function);
+ObjUpvalue* NewUpvalue(VMValue* slot);
+ObjClosure* NewClosure(ObjFunction* function);
+ObjClass* NewClass(Uint32 hash);
+ObjInstance* NewInstance(ObjClass* klass);
+ObjBoundMethod* NewBoundMethod(VMValue receiver, ObjFunction* method);
+ObjArray* NewArray();
+ObjMap* NewMap();
+ObjStream* NewStream(Stream* streamPtr, bool writable);
+ObjNamespace* NewNamespace(Uint32 hash);
+ObjEnum* NewEnum(Uint32 hash);
+ObjModule* NewModule();
+ObjMaterial* NewMaterial(Material* material);
+
+bool ValuesEqual(const VMValue &a, const VMValue &b);
+
+static inline bool IsObjectType(VMValue value, ObjType type) {
+	return IS_OBJECT(value) && AS_OBJECT(value)->Type == type;
+}
+
+static inline bool HasInitializer(ObjClass* klass) {
+	return !IS_NULL(klass->Initializer);
+}
 
 #endif /* ENGINE_BYTECODE_TYPES_H */
