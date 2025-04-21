@@ -14,11 +14,12 @@
 
 namespace Application {
 //private:
-	void MakeEngineVersion();
 	void LogEngineVersion();
 	void LogSystemInfo();
-	void Restart();
+	void MakeEngineVersion();
+	bool DetectEnvironmentRestriction();
 	void CreateWindow();
+	void Restart();
 	void LoadVideoSettings();
 	void LoadAudioSettings();
 	void LoadKeyBinds();
@@ -70,6 +71,7 @@ namespace Application {
 	void SetTargetFrameRate(int targetFPS);
 	bool IsPC();
 	bool IsMobile();
+	bool IsEnvironmentRestricted();
 	const char* GetDeveloperIdentifier();
 	const char* GetGameIdentifier();
 	const char* GetSavesDir();
