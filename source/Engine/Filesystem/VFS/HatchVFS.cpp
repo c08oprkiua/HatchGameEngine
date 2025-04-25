@@ -173,7 +173,6 @@ bool HatchVFS::ReadEntryData(VFSEntry &entry, Uint8 *memory, size_t memSize){
 	StreamPtr->ReadBytes(memory, copyLength);
 
 	// Decrypt it if it's encrypted
-
 	if (entry.Flags & VFSE_ENCRYPTED) {
 		// Get decryption hash from filename
 		Uint32 hash = 0;
