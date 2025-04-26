@@ -4,13 +4,13 @@ class ObjectList;
 class ObjectRegistry;
 class DrawGroupList;
 
-#include <Engine/Includes/Standard.h>
 #include <Engine/Application.h>
 #include <Engine/Graphics.h>
+#include <Engine/Includes/HashMap.h>
+#include <Engine/Includes/Standard.h>
 #include <Engine/ResourceTypes/ISprite.h>
 #include <Engine/Scene.h>
 #include <Engine/Types/EntityTypes.h>
-#include <Engine/Includes/HashMap.h>
 
 class Entity {
 public:
@@ -102,33 +102,33 @@ public:
     Entity* PrevSceneEntity = NULL;
     Entity* NextSceneEntity = NULL;
 
-    virtual ~Entity() = default;
-    void ApplyMotion();
-    void Animate();
-    void SetAnimation(int animation, int frame);
-    void ResetAnimation(int animation, int frame);
-    bool BasicCollideWithObject(Entity* other);
-    bool CollideWithObject(Entity* other);
-    int SolidCollideWithObject(Entity* other, int flag);
-    bool TopSolidCollideWithObject(Entity* other, int flag);
-    void Copy(Entity* other);
-    void CopyFields(Entity* other);
-    void ApplyPhysics();
-    virtual void Initialize();
-    virtual void Create();
-    virtual void PostCreate();
-    virtual void UpdateEarly();
-    virtual void Update();
-    virtual void UpdateLate();
-    virtual void OnAnimationFinish();
-    virtual void OnSceneLoad();
-    virtual void OnSceneRestart();
-    virtual void GameStart();
-    virtual void RenderEarly();
-    virtual void Render(int CamX, int CamY);
-    virtual void RenderLate();
-    virtual void Remove();
-    virtual void Dispose();
+	virtual ~Entity() = default;
+	void ApplyMotion();
+	void Animate();
+	void SetAnimation(int animation, int frame);
+	void ResetAnimation(int animation, int frame);
+	bool BasicCollideWithObject(Entity* other);
+	bool CollideWithObject(Entity* other);
+	int SolidCollideWithObject(Entity* other, int flag);
+	bool TopSolidCollideWithObject(Entity* other, int flag);
+	void Copy(Entity* other);
+	void CopyFields(Entity* other);
+	void ApplyPhysics();
+	virtual void Initialize();
+	virtual void Create();
+	virtual void PostCreate();
+	virtual void UpdateEarly();
+	virtual void Update();
+	virtual void UpdateLate();
+	virtual void OnAnimationFinish();
+	virtual void OnSceneLoad();
+	virtual void OnSceneRestart();
+	virtual void GameStart();
+	virtual void RenderEarly();
+	virtual void Render(int CamX, int CamY);
+	virtual void RenderLate();
+	virtual void Remove();
+	virtual void Dispose();
 };
 
 #endif /* ENGINE_TYPES_ENTITY_H */

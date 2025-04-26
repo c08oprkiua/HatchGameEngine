@@ -17,6 +17,9 @@
 *.xcscmblueprint
 *.xccheckout
 *.xcodeproj/*
+*.o
+/hatch
+*.fmt
 
 HatchGameEngine.exe
 *-Debug.exe
@@ -460,3 +463,4 @@ lint/tmp/
 
 # Android Profiling
 *.hprof
+compile_commands.json

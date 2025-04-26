@@ -1,20 +1,26 @@
 #ifndef ENGINE_APPLICATION_H
 #define ENGINE_APPLICATION_H
 
+#include <Engine/Audio/AudioManager.h>
+#include <Engine/Filesystem/Path.h>
 #include <Engine/Includes/Standard.h>
 #include <Engine/Includes/Version.h>
 #include <Engine/InputManager.h>
-#include <Engine/Audio/AudioManager.h>
-#include <Engine/Scene.h>
 #include <Engine/Math/Math.h>
+#include <Engine/Scene.h>
 #include <Engine/TextFormats/INI/INI.h>
-#include <Engine/TextFormats/XML/XMLParser.h>
 #include <Engine/TextFormats/XML/XMLNode.h>
+#include <Engine/TextFormats/XML/XMLParser.h>
 
 class Application {
 private:
+    static void LogEngineVersion();
+    static void LogSystemInfo();
     static void MakeEngineVersion();
+    static void DetectEnvironmentRestriction();
+    static void CreateWindow();
     static void Restart();
+    static void LoadVideoSettings();
     static void LoadAudioSettings();
     static void LoadKeyBinds();
     static void LoadDevSettings();
@@ -47,20 +53,19 @@ private:
 public:
     static vector<char*>    CmdLineArgs;
     static INI*             Settings;
-    static char             SettingsFile[4096];
+    static char             SettingsFile[MAX_PATH_LENGTH];
     static XMLNode*         GameConfig;
     static int              TargetFPS;
     static float            CurrentFPS;
     static bool             Running;
     static bool             FirstFrame;
     static bool             GameStart;
+    static bool             PortableMode;
     static SDL_Window*      Window;
     static char             WindowTitle[256];
     static int              WindowWidth;
     static int              WindowHeight;
     static int              WindowScale;
-    static bool             WindowFullscreen;
-    static bool             WindowBorderless;
     static int              DefaultMonitor;
     static Platforms        Platform;
     static char             EngineVersion[256];
@@ -69,6 +74,7 @@ public:
     static char             GameVersion[256];
     static char             GameDescription[256];
     static int              UpdatesPerFrame;
+    static int              FrameSkip;
     static bool             Stepper;
     static bool             Step;
     static int              MasterVolume;
@@ -76,20 +82,27 @@ public:
     static int              SoundVolume;
     static int              StartSceneNum;
     static bool             DevMenuActivated;
-    static int              ViewableVariableCount;
+    static bool             DevShowHitboxes;
+    static bool             DevConvertModels;
+    static bool             AllowCmdLineSceneLoad;
+
     static ViewableVariable ViewableVariableList[64];
+    static int              ViewableVariableCount;
     static DeveloperMenu    DevMenu;
     static int              DeveloperDarkFont;
     static int              DeveloperLightFont;
     static int              ReservedSlotIDs;
-    static bool             DevShowHitboxes;
-    static bool             DevConvertModels;
-    static bool             AllowCmdLineSceneLoad;
+
+    static const char* GetDeveloperIdentifier();
+    static const char* GetGameIdentifier();
+    static const char* GetSavesDir();
+    static const char* GetPreferencesDir();
 
     static void Init(int argc, char* args[]);
     static void SetTargetFrameRate(int targetFPS);
     static bool IsPC();
     static bool IsMobile();
+    static bool IsEnvironmentRestricted();
     static void GetPerformanceSnapshot();
     static void SetWindowTitle(const char* title);
     static void UpdateWindowTitle();
@@ -115,9 +128,6 @@ public:
     static void SaveSettings();
     static void SaveSettings(const char* filename);
     static void SetSettingsFilename(const char* filename);
-    static void AddViewableVariable(const char* name, void* value, int type, int min, int max);
-    static Uint16* UTF8toUTF16(const char* utf8String);
-    static int LoadDevFont(const char* fileName);
 };
 
 #endif /* ENGINE_APPLICATION_H */

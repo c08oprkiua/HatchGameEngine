@@ -1,61 +1,49 @@
 #ifndef STANDARDLIBS_H
 #define STANDARDLIBS_H
 
-#include <stdio.h>
+#include <assert.h>
+#include <limits.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
-#include <assert.h>
 #include <string.h>
-#include <math.h>
 
-#include <unordered_map>
 #include <algorithm>
-#include <string>
-#include <vector>
-#include <memory>
-#include <map>
-#include <deque>
-#include <stack>
-#include <filesystem>
 #include <csetjmp>
+#include <deque>
+#include <filesystem>
+#include <map>
+#include <memory>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include <Engine/Includes/Endian.h>
 
 #if WIN32
-    #define snprintf _snprintf
-    #undef __useHeader
-    #undef __on_failure
+#define snprintf _snprintf
+#undef __useHeader
+#undef __on_failure
 #endif
 
-#ifndef R_PI
-    #define R_PI 3.1415927
-#endif
-
-template <typename T>
+template<typename T>
 using vector = std::vector<T>;
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 using map = std::map<T1, T2>;
 
-template <typename T>
+template<typename T>
 using stack = std::stack<T>;
 
-template <typename T>
+template<typename T>
 using deque = std::deque<T>;
 
 using string = std::string;
 
-enum class Platforms {
-    Windows,
-    MacOS,
-    Linux,
-    Switch,
-    PlayStation,
-    Xbox,
-    Android,
-    iOS,
-    Unknown
-};
+enum class Platforms { Windows, MacOS, Linux, Switch, PlayStation, Xbox, Android, iOS, Unknown };
 
 enum class KeyBind {
     Fullscreen,
@@ -72,7 +60,7 @@ enum class KeyBind {
     DevQuit,
     DevShowHitboxes,
 
-    Max
+	Max
 };
 
 enum {
@@ -123,6 +111,8 @@ struct ViewableVariable {
 
 #define MAX_TARGET_FRAMERATE 240
 
+#define MATRIX_STACK_SIZE 256
+
 #define MAX_SCENE_VIEWS 8
 #define MAX_PALETTE_COUNT 256
 #define MAX_DEFORM_LINES 0x400
@@ -140,14 +130,20 @@ typedef int16_t Sint16;
 typedef int32_t Sint32;
 typedef int64_t Sint64;
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
+
+#ifndef M_PI_HALF
+#define M_PI_HALF (M_PI / 2)
+#endif
+
+#define RSDK_PI 3.1415927
+
 #ifdef IOS
 #define NEW_STRUCT_MACRO(n) (n)
 #else
 #define NEW_STRUCT_MACRO(n) n
 #endif
-
-constexpr uint32_t MakeFourCC(const char *val) {
-    return (val[0] << 24) | (val[1] << 16) | (val[2] << 8) | val[3];
-}
 
 #endif // STANDARDLIBS_H

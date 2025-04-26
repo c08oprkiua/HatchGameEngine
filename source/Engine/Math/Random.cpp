@@ -5,10 +5,11 @@
 Sint32 Random::Seed = INITIAL_RANDOM_SEED;
 
 void Random::SetSeed(Sint32 seed) {
-    if (!seed)
-        seed = INITIAL_RANDOM_SEED;
+	if (!seed) {
+		seed = INITIAL_RANDOM_SEED;
+	}
 
-    Seed = seed;
+	Seed = seed;
 }
 
 float Random::Get() {
@@ -18,9 +19,9 @@ float Random::Get() {
 }
 
 float Random::Max(float max) {
-    return Random::Get() * max;
+	return Random::Get() * max;
 }
 
 float Random::Range(float min, float max) {
-    return (Random::Get() * (max - min)) + min;
+	return (Random::Get() * (max - min)) + min;
 }

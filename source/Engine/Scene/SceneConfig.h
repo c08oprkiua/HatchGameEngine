@@ -4,63 +4,57 @@
 #include <Engine/Includes/HashMap.h>
 
 struct SceneListEntry {
-    char*           Name = nullptr;
-    char*           Folder = nullptr;
-    char*           ID = nullptr;
-    char*           Path = nullptr;
-    char*           ResourceFolder = nullptr;
-    char*           Filetype = nullptr;
-    int             Filter = 0;
+	char* Name = nullptr;
+	char* Folder = nullptr;
+	char* ID = nullptr;
+	char* Path = nullptr;
+	char* ResourceFolder = nullptr;
+	char* Filetype = nullptr;
 
-    HashMap<char*>* Properties = nullptr;
+	HashMap<char*>* Properties = nullptr;
 
-    void Dispose() {
-        // Log::Print(Log::LOG_VERBOSE, "Reaching list entry clear 1");
-        if (Properties) {
-            // Log::Print(Log::LOG_VERBOSE, "Reaching list entry clear 2");
-            Properties->WithAll([](Uint32 hash, char* string) -> void {
-                // Log::Print(Log::LOG_VERBOSE, "Reaching list entry clear 3");
-                Memory::Free(string);
-            });
-            // Log::Print(Log::LOG_VERBOSE, "Reaching list entry clear 4");
-            delete Properties;
-            // Log::Print(Log::LOG_VERBOSE, "Reaching list entry clear 5");
-            Properties = nullptr;
-        }
-        // Log::Print(Log::LOG_VERBOSE, "Reaching list entry clear 6");
+	void Dispose() {
+		if (Properties) {
+			Properties->WithAll([](Uint32 hash, char* string) -> void {
+				Memory::Free(string);
+			});
 
-        // Name, Folder, etc. don't need to be freed because they are contained in Properties.
-    }
+			delete Properties;
+
+			Properties = nullptr;
+		}
+
+		// Name, Folder, etc. don't need to be freed because
+		// they are contained in Properties.
+	}
 };
 
 struct SceneListCategory {
-    char*           Name = nullptr;
+	char* Name = nullptr;
 
-    vector<SceneListEntry> Entries;
+	vector<SceneListEntry> Entries;
 
-    HashMap<char*>* Properties = nullptr;
+	HashMap<char*>* Properties = nullptr;
 
-    void Dispose() {
-        Log::Print(Log::LOG_VERBOSE, "Reaching category entry clear 1");
-        for (size_t i = 0; i < Entries.size(); i++) {
-            Entries[i].Dispose();
-        }
-        Entries.clear();
-        Log::Print(Log::LOG_VERBOSE, "Reaching category entry clear 2");
+	void Dispose() {
+		for (size_t i = 0; i < Entries.size(); i++) {
+			Entries[i].Dispose();
+		}
+		Entries.clear();
 
-        if (Properties) {
-            Properties->WithAll([](Uint32 hash, char* string) -> void {
-                Memory::Free(string);
-            });
+		if (Properties) {
+			Properties->WithAll([](Uint32 hash, char* string) -> void {
+				Memory::Free(string);
+			});
 
-            delete Properties;
+			delete Properties;
 
-            Properties = nullptr;
-        }
-        Log::Print(Log::LOG_VERBOSE, "Reaching category entry clear 3");
+			Properties = nullptr;
+		}
 
-        // Name doesn't need to be freed because it's contained in Properties.
-    }
+		// Name doesn't need to be freed because it's contained
+		// in Properties.
+	}
 };
 
 #endif /* ENGINE_SCENE_SCENECONFIG_H */

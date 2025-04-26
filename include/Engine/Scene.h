@@ -2,50 +2,50 @@
 #define ENGINE_SCENE_H
 class Entity;
 
-#include <Engine/Includes/Standard.h>
 #include <Engine/Application.h>
+#include <Engine/Diagnostics/PerformanceTypes.h>
 #include <Engine/Graphics.h>
-#include <Engine/ResourceTypes/ResourceType.h>
 #include <Engine/Includes/HashMap.h>
+#include <Engine/Includes/Standard.h>
 #include <Engine/Math/Math.h>
-#include <Engine/Types/Tileset.h>
+#include <Engine/Rendering/GameTexture.h>
+#include <Engine/ResourceTypes/ResourceType.h>
+#include <Engine/Scene/SceneConfig.h>
+#include <Engine/Scene/SceneEnums.h>
+#include <Engine/Scene/SceneLayer.h>
+#include <Engine/Scene/TileAnimation.h>
+#include <Engine/Scene/TileConfig.h>
+#include <Engine/Scene/TileSpriteInfo.h>
+#include <Engine/Scene/View.h>
+#include <Engine/Types/DrawGroupList.h>
 #include <Engine/Types/EntityTypes.h>
 #include <Engine/Types/ObjectList.h>
 #include <Engine/Types/ObjectRegistry.h>
-#include <Engine/Types/DrawGroupList.h>
-#include <Engine/Rendering/GameTexture.h>
-#include <Engine/Scene/SceneConfig.h>
-#include <Engine/Scene/SceneLayer.h>
-#include <Engine/Scene/SceneEnums.h>
-#include <Engine/Scene/TileConfig.h>
-#include <Engine/Scene/TileSpriteInfo.h>
-#include <Engine/Scene/TileAnimation.h>
-#include <Engine/Scene/View.h>
-#include <Engine/Diagnostics/PerformanceTypes.h>
+#include <Engine/Types/Tileset.h>
 
 class Scene {
 private:
-    static void RemoveObject(Entity* obj);
-    static void RunTileAnimations();
-    static void ResetViews();
-    static void Iterate(Entity* first, std::function<void(Entity* e)> func);
-    static void IterateAll(Entity* first, std::function<void(Entity* e)> func);
-    static void ResetPriorityListIndex(Entity* first);
-    static int GetPersistenceScopeForObjectDeletion();
-    static void ClearPriorityLists();
-    static void DeleteObjects(Entity** first, Entity** last, int* count);
-    static void RemoveNonPersistentObjects(Entity** first, Entity** last, int* count);
-    static void DeleteAllObjects();
-    static void AddStaticClass();
-    static void CallGameStart();
-    static void SpawnStaticObject(const char* objectName);
-    static void ReadRSDKTile(TileConfig* tile, Uint8* line);
-    static void LoadRSDKTileConfig(int tilesetID, Stream* tileColReader);
-    static void LoadHCOLTileConfig(size_t tilesetID, Stream* tileColReader);
-    static void InitTileCollisions();
-    static void ClearTileCollisions(TileConfig* cfg, size_t numTiles);
-    static void SetTileCount(size_t tileCount);
-    static bool GetTextureListSpace(size_t* out);
+	static void RemoveObject(Entity* obj);
+	static void RunTileAnimations();
+	static void ResetViews();
+	static void Iterate(Entity* first, std::function<void(Entity* e)> func);
+	static void IterateAll(Entity* first, std::function<void(Entity* e)> func);
+	static void ResetPriorityListIndex(Entity* first);
+	static int GetPersistenceScopeForObjectDeletion();
+	static void ClearPriorityLists();
+	static void DeleteObjects(Entity** first, Entity** last, int* count);
+	static void RemoveNonPersistentObjects(Entity** first, Entity** last, int* count);
+	static void DeleteAllObjects();
+	static void AddStaticClass();
+	static void CallGameStart();
+	static void SpawnStaticObject(const char* objectName);
+	static void ReadRSDKTile(TileConfig* tile, Uint8* line);
+	static void LoadRSDKTileConfig(int tilesetID, Stream* tileColReader);
+	static void LoadHCOLTileConfig(size_t tilesetID, Stream* tileColReader);
+	static void InitTileCollisions();
+	static void ClearTileCollisions(TileConfig* cfg, size_t numTiles);
+	static void SetTileCount(size_t tileCount);
+	static bool GetTextureListSpace(size_t* out);
 
 public:
     static int                       ShowTileCollisionFlag;

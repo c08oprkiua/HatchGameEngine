@@ -10,8 +10,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(CMAKE_CXX_FLAGS "/wd4244 /wd4267 /wd4305 /wd4717 /EHsc")
 else()
-  set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=nocona")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Ofast -march=nocona")
+  set(HATCH_OPT_FLAGS "-Ofast")
+  if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+    set(HATCH_OPT_FLAGS "${HATCH_OPT_FLAGS} -march=nocona")
+  endif()
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${HATCH_OPT_FLAGS}")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${HATCH_OPT_FLAGS}")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${HATCH_OPT_FLAGS}")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${HATCH_OPT_FLAGS}")
 endif()
 
 # Set up CMake modules path
@@ -52,6 +58,7 @@ else()
   option(DEVELOPER_MODE "Developer mode" OFF)
 endif()
 
+option(PORTABLE_MODE "Portable mode" OFF)
 option(ALLOW_COMMAND_LINE_RESOURCE_LOAD "Allow loading resource files from command line" ON)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -102,6 +109,10 @@ endif()
 
 if(DEVELOPER_MODE)
   add_definitions(-DDEVELOPER_MODE)
+endif()
+
+if(PORTABLE_MODE)
+  add_definitions(-DPORTABLE_MODE)
 endif()
 
 if(ALLOW_COMMAND_LINE_RESOURCE_LOAD)
