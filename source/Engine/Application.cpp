@@ -65,12 +65,9 @@ Platforms Application::Platform = Platforms::iOS;
 Platforms Application::Platform = Platforms::Unknown;
 #endif
 
-INI*             Application::Settings = NULL;
-char             Application::SettingsFile[4096];
-vector<char*>    Application::CmdLineArgs;
-
 INI* Application::Settings = NULL;
 char Application::SettingsFile[MAX_PATH_LENGTH];
+vector<char*> Application::CmdLineArgs;
 
 XMLNode* Application::GameConfig = NULL;
 
@@ -88,6 +85,7 @@ int Application::WindowHeight = 240;
 int Application::WindowScale = 2;
 bool Application::WindowFullscreen = false;
 bool Application::WindowBorderless = false;
+int Application::DefaultMonitor = 0;
 
 char Application::EngineVersion[256];
 
@@ -117,6 +115,8 @@ int Application::DeveloperLightFont = -1;
 int Application::ReservedSlotIDs = 0;
 
 bool Application::DevShowHitboxes = false;
+
+bool Application::DevConvertModels = false;
 
 bool Application::AllowCmdLineSceneLoad = false;
 
@@ -773,7 +773,6 @@ void Application::Restart() {
 }
 
 void Application::LoadVideoSettings() {
-	bool vsyncEnabled;
 	Application::Settings->GetBool("display", "vsync", &Graphics::VsyncEnabled);
 	Application::Settings->GetInteger("display", "frameSkip", &Application::FrameSkip);
 
@@ -782,15 +781,11 @@ void Application::LoadVideoSettings() {
 	}
 
 	if (Graphics::Initialized) {
-		Graphics::SetVSync(vsyncEnabled);
+		Graphics::SetVSync(Graphics::VsyncEnabled);
 	}
 	else {
-		Graphics::VsyncEnabled = vsyncEnabled;
-
-		Application::Settings->GetInteger(
-			"display", "multisample", &Graphics::MultisamplingEnabled);
-		Application::Settings->GetInteger(
-			"display", "defaultMonitor", &Application::DefaultMonitor);
+		Application::Settings->GetInteger("display", "multisample", &Graphics::MultisamplingEnabled);
+		Application::Settings->GetInteger("display", "defaultMonitor", &Application::DefaultMonitor);
 	}
 }
 

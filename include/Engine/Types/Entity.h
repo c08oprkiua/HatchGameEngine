@@ -11,6 +11,7 @@ class DrawGroupList;
 #include <Engine/ResourceTypes/ISprite.h>
 #include <Engine/Scene.h>
 #include <Engine/Types/EntityTypes.h>
+#include <Engine/Rendering/Enums.h>
 
 class Entity {
 public:

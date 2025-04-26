@@ -1405,102 +1405,6 @@ VMValue Application_GetCursorVisible(int argCount, VMValue* args, Uint32 threadI
 }
 // #endregion
 
-// #region Audio
-/***
- * Audio.GetMasterVolume
- * \desc Gets the master volume of the audio mixer.
- * \return The master volume, from 0 to 100.
- * \ns Audio
- */
-VMValue Audio_GetMasterVolume(int argCount, VMValue* args, Uint32 threadID) {
-	CHECK_ARGCOUNT(0);
-	return INTEGER_VAL(Application::MasterVolume);
-}
-/***
- * Audio.GetMusicVolume
- * \desc Gets the music volume of the audio mixer.
- * \return The music volume, from 0 to 100.
- * \ns Audio
- */
-VMValue Audio_GetMusicVolume(int argCount, VMValue* args, Uint32 threadID) {
-	CHECK_ARGCOUNT(0);
-	return INTEGER_VAL(Application::MusicVolume);
-}
-/***
- * Audio.GetSoundVolume
- * \desc Gets the sound effect volume of the audio mixer.
- * \return The sound effect volume, from 0 to 100.
- * \ns Audio
- */
-VMValue Audio_GetSoundVolume(int argCount, VMValue* args, Uint32 threadID) {
-	CHECK_ARGCOUNT(0);
-	return INTEGER_VAL(Application::SoundVolume);
-}
-/***
- * Audio.SetMasterVolume
- * \desc Sets the master volume of the audio mixer.
- * \param volume (Integer): The master volume, from 0 to 100.
- * \ns Audio
- */
-VMValue Audio_SetMasterVolume(int argCount, VMValue* args, Uint32 threadID) {
-	CHECK_ARGCOUNT(1);
-	int volume = GET_ARG(0, GetInteger);
-	if (volume < 0) {
-		THROW_ERROR("Volume cannot be lower than 0.");
-	}
-	else if (volume > 100) {
-		THROW_ERROR("Volume cannot be higher than 100.");
-	}
-	else {
-		Application::SetMasterVolume(volume);
-	}
-
-	return NULL_VAL;
-}
-/***
- * Audio.SetMusicVolume
- * \desc Sets the music volume of the audio mixer.
- * \param volume (Integer): The music volume, from 0 to 100.
- * \ns Audio
- */
-VMValue Audio_SetMusicVolume(int argCount, VMValue* args, Uint32 threadID) {
-	CHECK_ARGCOUNT(1);
-	int volume = GET_ARG(0, GetInteger);
-	if (volume < 0) {
-		THROW_ERROR("Volume cannot be lower than 0.");
-	}
-	else if (volume > 100) {
-		THROW_ERROR("Volume cannot be higher than 100.");
-	}
-	else {
-		Application::SetMusicVolume(volume);
-	}
-
-	return NULL_VAL;
-}
-/***
- * Audio.SetSoundVolume
- * \desc Sets the sound effect volume of the audio mixer.
- * \param volume (Integer): The sound effect volume, from 0 to 100.
- * \ns Audio
- */
-VMValue Audio_SetSoundVolume(int argCount, VMValue* args, Uint32 threadID) {
-	CHECK_ARGCOUNT(1);
-	int volume = GET_ARG(0, GetInteger);
-	if (volume < 0) {
-		THROW_ERROR("Volume cannot be lower than 0.");
-	}
-	else if (volume > 100) {
-		THROW_ERROR("Volume cannot be higher than 100.");
-	}
-	else {
-		Application::SetSoundVolume(volume);
-	}
-
-	return NULL_VAL;
-}
-// #endregion
-
 // #region Array
 /***
  * Array.Create
@@ -18872,16 +18776,6 @@ void StandardLibrary::Link() {
     * \desc (software-renderer only) Uses orthographic perspective projection.
     */
 	DEF_ENUM(DrawMode_ORTHOGRAPHIC);
-	/***
-    * \enum DrawMode_LINES_FLAT
-    * \desc Combination of <linkto ref="DrawMode_LINES"></linkto> and <linkto ref="DrawMode_FLAT_LIGHTING"></linkto>.
-    */
-	DEF_ENUM(DrawMode_LINES_FLAT);
-	/***
-    * \enum DrawMode_LINES_SMOOTH
-    * \desc Combination of <linkto ref="DrawMode_LINES"></linkto> and <linkto ref="DrawMode_SMOOTH_LIGHTING"></linkto>.
-    */
-	DEF_ENUM(DrawMode_LINES_SMOOTH);
 	/***
     * \enum DrawMode_POLYGONS_FLAT
     * \desc Combination of <linkto ref="DrawMode_POLYGONS"></linkto> and <linkto ref="DrawMode_FLAT_LIGHTING"></linkto>.

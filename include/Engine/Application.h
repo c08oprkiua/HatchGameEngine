@@ -17,7 +17,7 @@ private:
     static void LogEngineVersion();
     static void LogSystemInfo();
     static void MakeEngineVersion();
-    static void DetectEnvironmentRestriction();
+    static bool DetectEnvironmentRestriction();
     static void CreateWindow();
     static void Restart();
     static void LoadVideoSettings();
@@ -33,6 +33,7 @@ private:
     static string ParseGameVersion(XMLNode* versionNode);
     static void LoadGameInfo();
     static int HandleAppEvents(void* data, SDL_Event* event);
+    static void AddViewableVariable(const char* name, void* value, int type, int min, int max);
     static void DrawDevString(const char* string, int x, int y, int align, bool isSelected);
     static void OpenDevMenu();
     static void CloseDevMenu();
@@ -66,6 +67,8 @@ public:
     static int              WindowWidth;
     static int              WindowHeight;
     static int              WindowScale;
+    static bool             WindowFullscreen;
+    static bool             WindowBorderless;
     static int              DefaultMonitor;
     static Platforms        Platform;
     static char             EngineVersion[256];
@@ -114,6 +117,8 @@ public:
     static bool GetWindowFullscreen();
     static void SetWindowFullscreen(bool isFullscreen);
     static void SetWindowBorderless(bool isBorderless);
+    static int LoadDevFont(const char* fileName);
+    static Uint16* UTF8toUTF16(const char* utf8String);
     static int GetKeyBind(int bind);
     static void SetKeyBind(int bind, int key);
     static void Run(int argc, char* args[]);

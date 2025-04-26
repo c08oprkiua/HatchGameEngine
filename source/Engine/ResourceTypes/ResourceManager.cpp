@@ -4,6 +4,7 @@
 #include <Engine/Diagnostics/Log.h>
 #include <Engine/Filesystem/File.h>
 #include <Engine/Filesystem/VFS/VirtualFileSystem.h>
+#include <Engine/Filesystem/Directory.h>
 
 #define RESOURCES_VFS_NAME "main"
 
@@ -13,7 +14,7 @@ bool ResourceManager::UsingDataFolder = true;
 bool ResourceManager::UsingModPack = false;
 
 std::vector<ModInfo> ResourceManager::Mods;
-INI*                 ResourceManager::ModConfig = NULL;
+INI* ResourceManager::ModConfig = NULL;
 
 VirtualFileSystem* vfs = nullptr;
 VFSProvider* mainResource = nullptr;
@@ -56,21 +57,6 @@ bool ResourceManager::Init(const char* filename) {
 		if (status == VFSMountStatus::MOUNTED) {
 			Log::Print(Log::LOG_INFO, "Using \"%s\" folder.", RESOURCES_DIR_PATH);
 
-    ResourceManager::LoadModConfig();
-
-    // char modpacksString[1024];
-    // if (Application::Settings->GetString("game", "modpacks", modpacksString, sizeof modpacksString)) {
-        // if (File::Exists(modpacksString)) {
-            // ResourceManager::UsingModPack = true;
-
-            // Log::Print(Log::LOG_IMPORTANT, "Using \"%s\"", modpacksString);
-            // ResourceManager::Load(modpacksString);
-        // }
-    // }
-}
-void ResourceManager::Load(const char* filename) {
-    if (!ResourceRegistry)
-        return;
 			ResourceManager::UsingDataFolder = true;
 		}
 		else {
@@ -86,13 +72,21 @@ void ResourceManager::Load(const char* filename) {
 		return false;
 	}
 
+	ResourceManager::LoadModConfig();
+
+	// char modpacksString[1024];
+	// if (Application::Settings->GetString("game", "modpacks", modpacksString, sizeof modpacksString)) {
+		// if (File::Exists(modpacksString)) {
+			// ResourceManager::UsingModPack = true;
+
+			// Log::Print(Log::LOG_IMPORTANT, "Using \"%s\"", modpacksString);
+			// ResourceManager::Load(modpacksString);
+		// }
+	// }
+
 	return true;
 }
-bool ResourceManager::Mount(const char* name,
-	const char* filename,
-	const char* mountPoint,
-	VFSType type,
-	Uint16 flags) {
+bool ResourceManager::Mount(const char* name, const char* filename, const char* mountPoint, VFSType type, Uint16 flags) {
 	VFSMountStatus status = vfs->Mount(name, filename, mountPoint, type, flags);
 
 	if (status == VFSMountStatus::NOT_FOUND) {
@@ -179,46 +173,50 @@ void ResourceManager::LoadModConfig() {
         ResourceManager::ModConfig->Save("Mods/ModConfig.ini");
     }
 
-    std::vector<char*> modFolders = Directory::GetDirectories("Mods", "*", false);
-    for (char* modFolder : modFolders) {
-        std::string modName = modFolder;
-        modName = modName.substr(modName.find_last_of("/\\") + 1);
-        Log::Print(Log::LOG_INFO, "Directory %s", modName.c_str());
+	std::vector<std::string> modFolders;
+	std::vector<std::filesystem::path> directories = Directory::GetDirectories("Mods", "*", false);
 
-        std::string modIniPathStr = std::string(modFolder) + "/Mod.ini";
-        const char* modIniPath = modIniPathStr.c_str();
+	for (const auto& dir : directories) {
+		modFolders.push_back(dir.string());
+	}
 
-        INI* modIni = INI::Load(modIniPath);
-        if (modIni) {
-            ModInfo modInfo;
-            modInfo.Path = modFolder;
-            modInfo.FolderName = modName;
+	for (const std::string& modFolder : modFolders) {
+		std::string modName = modFolder;
+		modName = modName.substr(modName.find_last_of("/\\") + 1);
+		Log::Print(Log::LOG_INFO, "Directory %s", modName.c_str());
 
-            char name[256], author[256], description[256], version[256];
-            modIni->GetString(nullptr, "Name", name, sizeof(name));
-            modIni->GetString(nullptr, "Author", author, sizeof(author));
-            modIni->GetString(nullptr, "Description", description, sizeof(description));
-            modIni->GetString(nullptr, "Version", version, sizeof(version));
+		std::string modIniPathStr = std::string(modFolder) + "/Mod.ini";
+		const char* modIniPath = modIniPathStr.c_str();
 
-            modInfo.Name = name;
-            modInfo.Author = author;
-            modInfo.Description = description;
-            modInfo.Version = version;
+		INI* modIni = INI::Load(modIniPath);
+		if (modIni) {
+			ModInfo modInfo;
+			modInfo.Path = modFolder;
+			modInfo.FolderName = modName;
 
-            Log::Print(Log::LOG_INFO, "Mod Name: %s", name);
-            Log::Print(Log::LOG_INFO, "Author: %s", author);
-            Log::Print(Log::LOG_INFO, "Description: %s", description);
-            Log::Print(Log::LOG_INFO, "Version: %s", version);
+			char name[256], author[256], description[256], version[256];
+			modIni->GetString(nullptr, "Name", name, sizeof(name));
+			modIni->GetString(nullptr, "Author", author, sizeof(author));
+			modIni->GetString(nullptr, "Description", description, sizeof(description));
+			modIni->GetString(nullptr, "Version", version, sizeof(version));
 
-            modIni->Dispose();
+			modInfo.Name = name;
+			modInfo.Author = author;
+			modInfo.Description = description;
+			modInfo.Version = version;
 
-            ResourceManager::ModConfig->GetBool("Mods", modName.c_str(), &modInfo.Active);
+			Log::Print(Log::LOG_INFO, "Mod Name: %s", name);
+			Log::Print(Log::LOG_INFO, "Author: %s", author);
+			Log::Print(Log::LOG_INFO, "Description: %s", description);
+			Log::Print(Log::LOG_INFO, "Version: %s", version);
 
-            ResourceManager::Mods.push_back(modInfo);
-        }
+			modIni->Dispose();
 
-        free(modFolder);
-    }
+			ResourceManager::ModConfig->GetBool("Mods", modName.c_str(), &modInfo.Active);
+
+			ResourceManager::Mods.push_back(modInfo);
+		}
+	}
 
     for (const ModInfo& modInfo : ResourceManager::Mods) {
         if (modInfo.Active) {

@@ -124,8 +124,8 @@ void Math::CalculateTrigAngles() {
         Sin256LookupTable[i] = (int)((Sin512LookupTable[i * 2] >> 1));
         Cos256LookupTable[i] = (int)((Cos512LookupTable[i * 2] >> 1));
         Tan256LookupTable[i] = (int)((Tan512LookupTable[i * 2] >> 1));
-        ASin256LookupTable[i] = (int)((asinf(i / 255.0) * 128.0) / R_PI);
-        ACos256LookupTable[i] = (int)((acosf(i / 255.0) * 128.0) / R_PI);
+        ASin256LookupTable[i] = (int)((asinf(i / 255.0) * 128.0) / RSDK_PI);
+        ACos256LookupTable[i] = (int)((acosf(i / 255.0) * 128.0) / RSDK_PI);
     }
 
     for (int y = 0; y < 0x100; y++) {

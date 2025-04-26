@@ -136,12 +136,15 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>WIN32;TARGET_NAME="$(ProjectName)";DEVELOPER_MODE;GLEW_STATIC;USING_OPENGL;USING_FREETYPE;USING_ASSIMP;NDEBUG;_WINDOWS;USING_VM_FUNCPTRS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <PostBuildEvent>
-      <Command>mkdir "$(SolutionDir)..\builds\win" &amp;&amp; copy "$(TargetPath)" "$(SolutionDir)..\builds\win\$(TargetName)-Release.exe"</Command>
+      <Command>if not exist "$(SolutionDir)..\builds\win" (
+    mkdir "$(SolutionDir)..\builds\win"
+)
+copy "$(TargetPath)" "$(SolutionDir)..\builds\win\$(TargetName)-Release.exe"</Command>
     </PostBuildEvent>
     <Link>
       <SubSystem>Console</SubSystem>
