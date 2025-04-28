@@ -1,5 +1,6 @@
 #include <Engine/Scene/SceneInfo.h>
 #include <Engine/Utilities/StringUtils.h>
+#include <Engine/ResourceTypes/ResourceManager.h>
 
 vector<SceneListCategory> SceneInfo::Categories;
 int SceneInfo::NumTotalScenes;
@@ -122,22 +123,20 @@ std::string SceneInfo::GetFilename(int categoryID, int entryID) {
 
 	SceneListEntry& entry = Categories[categoryID].Entries[entryID];
 
-	if (entry.Path != nullptr) {
-		return std::string(entry.Path);
-	}
+    if (entry.Path != nullptr)
+        return std::string(entry.Path);
 
 	std::string parentPath = GetParentPath(categoryID, entryID);
 
-	std::string id = entry.ID != nullptr ? std::string(entry.ID) : std::string(entry.Name);
+    std::string filePath = "";
 
-	std::string filePath = "";
+    // RSDK compatibility
+    if (entry.Filetype != nullptr && !strcmp(entry.Filetype, "bin")) {
+        // v3/4 versus v5
+        filePath = ResourceManager::ResourceExists((parentPath + "128x128Tiles.bin").c_str()) ? "Act" : "Scene";
+    }
 
-	// RSDK compatibility.
-	if (entry.Filetype != nullptr && strcmp(entry.Filetype, "bin") == 0) {
-		filePath = "Scene";
-	}
-
-	filePath += id;
+    filePath += entry.ID != nullptr ? std::string(entry.ID) : std::string(entry.Name);
 
 	if (entry.Filetype != nullptr) {
 		filePath += "." + std::string(entry.Filetype);
@@ -270,20 +269,12 @@ SceneListEntry SceneInfo::ParseEntry(XMLNode* node, size_t id) {
 	else if (entry.Folder) {
 		entry.ResourceFolder = StringUtils::Duplicate(entry.Folder);
 	}
-
-	// Sprite folder (backwards compat)
-	if (node->attributes.Exists("spriteFolder")) {
-		entry.ResourceFolder =
-			XMLParser::TokenToString(node->attributes.Get("spriteFolder"));
-	}
-
-	// Filetype
-	if (node->attributes.Exists("fileExtension")) {
-		entry.Filetype = XMLParser::TokenToString(node->attributes.Get("fileExtension"));
-	}
-	else if (node->attributes.Exists("type")) {
-		entry.Filetype = XMLParser::TokenToString(node->attributes.Get("type"));
-	}
+    
+    // Filetype
+    if (node->attributes.Exists("fileExtension"))
+        entry.Filetype = XMLParser::TokenToString(node->attributes.Get("fileExtension"));
+    else if (node->attributes.Exists("type"))
+        entry.Filetype = XMLParser::TokenToString(node->attributes.Get("type"));
 
 	// ID
 	if (node->attributes.Exists("id")) {
@@ -298,16 +289,14 @@ SceneListEntry SceneInfo::ParseEntry(XMLNode* node, size_t id) {
 	else {
 		entry.ID = StringUtils::Duplicate(entry.Name);
 	}
-
-	// Fill properties
-	entry.Properties = new HashMap<char*>(NULL, 8);
-	entry.Properties->Put("name", entry.Name);
-	entry.Properties->Put("folder", entry.Folder);
-	entry.Properties->Put("id", entry.ID);
-	entry.Properties->Put("resourceFolder", entry.ResourceFolder);
-	entry.Properties->Put("spriteFolder",
-		StringUtils::Duplicate(entry.ResourceFolder)); // backwards compat
-	entry.Properties->Put("fileExtension", entry.Filetype);
+    
+    // Fill properties
+    entry.Properties = new HashMap<char*>(NULL, 8);
+    entry.Properties->Put("name", entry.Name);
+    entry.Properties->Put("folder", entry.Folder);
+    entry.Properties->Put("id", entry.ID);
+    entry.Properties->Put("resourceFolder", entry.ResourceFolder);
+    entry.Properties->Put("fileExtension", entry.Filetype);
 
 	FillAttributesHashMap(&node->attributes, entry.Properties);
 
@@ -345,14 +334,12 @@ bool SceneInfo::Load(XMLNode* node) {
 
 			// Fill properties
 			FillAttributesHashMap(&listElement->attributes, category->Properties);
-
-			for (size_t s = 0; s < listElement->children.size(); ++s) {
-				XMLNode* node = listElement->children[s];
-				if (XMLParser::MatchToken(node->name, "scene") ||
-					XMLParser::MatchToken(node->name,
-						"stage")) { // backwards
-					// compat
-					SceneListEntry entry = ParseEntry(node, s);
+            
+            for (size_t s = 0; s < listElement->children.size(); ++s) {
+                XMLNode* node = listElement->children[s];
+                if (XMLParser::MatchToken(node->name, "scene")
+                || XMLParser::MatchToken(node->name, "stage")) { // Backwards compatibility
+                    SceneListEntry entry = ParseEntry(node, s);
 
 					category->Entries.push_back(entry);
 

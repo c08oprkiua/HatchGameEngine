@@ -4,16 +4,20 @@
 #include <Engine/Diagnostics/Log.h>
 #include <Engine/Filesystem/File.h>
 #include <Engine/Filesystem/VFS/VirtualFileSystem.h>
+#include <Engine/Filesystem/Directory.h>
 
 #define RESOURCES_VFS_NAME "main"
 
 #define RESOURCES_DIR_PATH "Resources"
 
+bool ResourceManager::UsingDataFolder = true;
+bool ResourceManager::UsingModPack = false;
+
+std::vector<ModInfo> ResourceManager::Mods;
+INI* ResourceManager::ModConfig = NULL;
+
 VirtualFileSystem* vfs = nullptr;
 VFSProvider* mainResource = nullptr;
-
-bool ResourceManager::UsingDataFolder = false;
-bool ResourceManager::UsingModPack = false;
 
 const char* data_files[] = {"Data.hatch", "Game.hatch", TARGET_NAME ".hatch"};
 
@@ -70,13 +74,21 @@ bool ResourceManager::Init(const char* filename) {
 // 		return false;
 // 	}
 
+	ResourceManager::LoadModConfig();
+
+	// char modpacksString[1024];
+	// if (Application::Settings->GetString("game", "modpacks", modpacksString, sizeof modpacksString)) {
+		// if (File::Exists(modpacksString)) {
+			// ResourceManager::UsingModPack = true;
+
+			// Log::Print(Log::LOG_IMPORTANT, "Using \"%s\"", modpacksString);
+			// ResourceManager::Load(modpacksString);
+		// }
+	// }
+
 	return true;
 }
-bool ResourceManager::Mount(const char* name,
-	const char* filename,
-	const char* mountPoint,
-	VFSType type,
-	Uint16 flags) {
+bool ResourceManager::Mount(const char* name, const char* filename, const char* mountPoint, VFSType type, Uint16 flags) {
 	VFSMountStatus status = vfs->Mount(name, filename, mountPoint, type, flags);
 
 	if (status == VFSMountStatus::NOT_FOUND) {
@@ -143,4 +155,87 @@ void ResourceManager::Dispose() {
 	delete vfs;
 	vfs = nullptr;
 	mainResource = nullptr;
+}
+
+void ResourceManager::LoadModConfig() {
+    if (!Directory::Exists("Mods")) {
+        Log::Print(Log::LOG_WARN, "No Mods folder");
+        return;
+    }
+
+    if (ResourceManager::ModConfig)
+        ResourceManager::ModConfig->Dispose();
+
+    ResourceManager::ModConfig = INI::Load("Mods/ModConfig.ini");
+
+    if (ResourceManager::ModConfig == nullptr) {
+        Log::Print(Log::LOG_WARN, "No ModConfig, creating new ModConfig.ini.");
+
+        ResourceManager::ModConfig = INI::New("Mods/ModConfig.ini");
+        ResourceManager::ModConfig->Save("Mods/ModConfig.ini");
+    }
+
+	std::vector<std::string> modFolders;
+	std::vector<std::filesystem::path> directories = Directory::GetDirectories("Mods", "*", false);
+
+	for (const auto& dir : directories) {
+		modFolders.push_back(dir.string());
+	}
+
+	for (const std::string& modFolder : modFolders) {
+		std::string modName = modFolder;
+		modName = modName.substr(modName.find_last_of("/\\") + 1);
+		Log::Print(Log::LOG_INFO, "Directory %s", modName.c_str());
+
+		std::string modIniPathStr = std::string(modFolder) + "/Mod.ini";
+		const char* modIniPath = modIniPathStr.c_str();
+
+		INI* modIni = INI::Load(modIniPath);
+		if (modIni) {
+			ModInfo modInfo;
+			modInfo.Path = modFolder;
+			modInfo.FolderName = modName;
+
+			char name[256], author[256], description[256], version[256];
+			modIni->GetString(nullptr, "Name", name, sizeof(name));
+			modIni->GetString(nullptr, "Author", author, sizeof(author));
+			modIni->GetString(nullptr, "Description", description, sizeof(description));
+			modIni->GetString(nullptr, "Version", version, sizeof(version));
+
+			modInfo.Name = name;
+			modInfo.Author = author;
+			modInfo.Description = description;
+			modInfo.Version = version;
+
+			Log::Print(Log::LOG_INFO, "Mod Name: %s", name);
+			Log::Print(Log::LOG_INFO, "Author: %s", author);
+			Log::Print(Log::LOG_INFO, "Description: %s", description);
+			Log::Print(Log::LOG_INFO, "Version: %s", version);
+
+			modIni->Dispose();
+
+			ResourceManager::ModConfig->GetBool("Mods", modName.c_str(), &modInfo.Active);
+
+			ResourceManager::Mods.push_back(modInfo);
+		}
+	}
+
+    for (const ModInfo& modInfo : ResourceManager::Mods) {
+        if (modInfo.Active) {
+            std::string modPath = "Mods/" + modInfo.FolderName;
+            if (File::Exists((modPath + "/Data.hatch").c_str())) {
+                ResourceManager::UsingModPack = true;
+                Log::Print(Log::LOG_IMPORTANT, "Using \"%s\"", (modPath + "/Data.hatch").c_str());
+            }
+            else if (Directory::Exists((modPath + "/Resources").c_str())) {
+                ResourceManager::UsingModPack = true;
+                Log::Print(Log::LOG_IMPORTANT, "Using \"%s\"", (modPath + "/Resources").c_str());
+            }
+        }
+        else {
+            ResourceManager::ModConfig->SetBool("Mods", modInfo.FolderName.c_str(), false);
+        }
+    }
+
+    ResourceManager::ModConfig->Save("Mods/ModConfig.ini");
 }

@@ -73,8 +73,8 @@ bool HatchSceneReader::Read(Stream* r, const char* parentFolder) {
 		r->ReadByte(); // ?
 	}
 
-	// Unused (number of kits)
-	r->ReadByte();
+    // Unused (number of kits) 
+    r->ReadByte();
 
 	Scene::PriorityPerLayer = Scene::BasePriorityPerLayer;
 	Scene::InitPriorityLists();
@@ -224,7 +224,7 @@ void HatchSceneReader::ReadScrollData(Stream* r, SceneLayer* layer) {
 		info->ConstantParallax = r->ReadInt16();
 		info->CanDeform = r->ReadByte();
 
-		r->ReadByte(); // ?
+        r->ReadByte(); // unused value
 
 		info->Position = 0;
 		info->Offset = 0;
@@ -474,13 +474,13 @@ void HatchSceneReader::ReadEntities(Stream* r) {
 				continue;
 			}
 
-			obj->X = posX;
-			obj->Y = posY;
-			obj->InitialX = posX;
-			obj->InitialY = posY;
-			obj->List = objectList;
-			obj->SlotID = (int)i;
-			Scene::AddStatic(objectList, obj);
+            obj->X = posX;
+            obj->Y = posY;
+            obj->InitialX = posX;
+            obj->InitialY = posY;
+            obj->List = objectList;
+            obj->SlotID = (int)i + Application::ReservedSlotIDs;
+            Scene::AddStatic(objectList, obj);
 
 			// Add "filter" property
 			obj->Properties->Put("filter", INTEGER_VAL(filter));

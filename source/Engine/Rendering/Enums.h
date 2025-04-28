@@ -59,6 +59,12 @@ enum {
 };
 
 enum {
+    ALIGN_LEFT,
+    ALIGN_CENTER,
+    ALIGN_RIGHT
+};
+
+enum {
 	DrawMode_POLYGONS = 0x0, // 0b0000
 	DrawMode_LINES = 0x1, // 0b0001
 	DrawMode_POINTS = 0x2, // 0b0010
@@ -67,9 +73,6 @@ enum {
 	DrawMode_FLAT_LIGHTING = 0x4, // 0b0100
 	DrawMode_SMOOTH_LIGHTING = 0x8, // 0b1000
 	DrawMode_LightingMask = 0xC, // 0b1100
-
-	DrawMode_LINES_FLAT = DrawMode_LINES | DrawMode_FLAT_LIGHTING,
-	DrawMode_LINES_SMOOTH = DrawMode_LINES | DrawMode_SMOOTH_LIGHTING,
 
 	DrawMode_POLYGONS_FLAT = DrawMode_POLYGONS | DrawMode_FLAT_LIGHTING,
 	DrawMode_POLYGONS_SMOOTH = DrawMode_POLYGONS | DrawMode_SMOOTH_LIGHTING,

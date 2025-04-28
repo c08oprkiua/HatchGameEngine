@@ -94,13 +94,17 @@ void Entity::ResetAnimation(int animation, int frame) {
 		return;
 	}
 
-	CurrentAnimation = animation;
-	AnimationTimer = 0.0;
-	CurrentFrame = frame;
-	CurrentFrameCount = (int)sprite->Animations[CurrentAnimation].Frames.size();
-	AnimationFrameDuration = sprite->Animations[CurrentAnimation].Frames[CurrentFrame].Duration;
-	AnimationSpeed = sprite->Animations[CurrentAnimation].AnimationSpeed;
-	AnimationLoopIndex = sprite->Animations[CurrentAnimation].FrameToLoop;
+    PrevAnimation           = CurrentAnimation;
+    CurrentAnimation        = animation;
+    AnimationTimer          = 0.0;
+    CurrentFrame            = frame;
+    CurrentFrameCount       = (int)sprite->Animations[CurrentAnimation].Frames.size();
+    AnimationFrameDuration  = sprite->Animations[CurrentAnimation].Frames[CurrentFrame].Duration;
+    AnimationSpeed          = sprite->Animations[CurrentAnimation].AnimationSpeed;
+    AnimationLoopIndex      = sprite->Animations[CurrentAnimation].FrameToLoop;
+    RotationStyle           = sprite->Animations[CurrentAnimation].Flags;
+    if (RotationStyle == ROTSTYLE_STATICFRAMES)
+        CurrentFrameCount >>= 1;
 }
 bool Entity::BasicCollideWithObject(Entity* other) {
 	float otherHitboxW = other->Hitbox.Width;
@@ -390,23 +394,24 @@ void Entity::CopyFields(Entity* other) {
 	COPY(Gravity);
 	COPY(Ground);
 
-	COPY(WasOffScreen);
-	COPY(OnScreen);
-	COPY(OnScreenHitboxW);
-	COPY(OnScreenHitboxH);
-	COPY(OnScreenRegionTop);
-	COPY(OnScreenRegionLeft);
-	COPY(OnScreenRegionRight);
-	COPY(OnScreenRegionBottom);
-	COPY(Visible);
-	COPY(ViewRenderFlag);
-	COPY(ViewOverrideFlag);
-	COPY(RenderRegionW);
-	COPY(RenderRegionH);
-	COPY(RenderRegionTop);
-	COPY(RenderRegionLeft);
-	COPY(RenderRegionRight);
-	COPY(RenderRegionBottom);
+    COPY(WasOffScreen);
+    COPY(OnScreen);
+    COPY(OnScreenHitboxW);
+    COPY(OnScreenHitboxH);
+    COPY(OnScreenRegionTop);
+    COPY(OnScreenRegionLeft);
+    COPY(OnScreenRegionRight);
+    COPY(OnScreenRegionBottom);
+    COPY(Visible);
+    COPY(ViewRenderFlag);
+    COPY(ViewOverrideFlag);
+    COPY(Visible);
+    COPY(RenderRegionW);
+    COPY(RenderRegionH);
+    COPY(RenderRegionTop);
+    COPY(RenderRegionLeft);
+    COPY(RenderRegionRight);
+    COPY(RenderRegionBottom);
 
 	COPY(Angle);
 	COPY(AngleMode);
@@ -424,17 +429,19 @@ void Entity::CopyFields(Entity* other) {
 	COPY(OldDepth);
 	COPY(ZDepth);
 
-	COPY(Sprite);
-	COPY(CurrentAnimation);
-	COPY(CurrentFrame);
-	COPY(CurrentFrameCount);
-	COPY(AnimationSpeedMult);
-	COPY(AnimationSpeedAdd);
-	COPY(AutoAnimate);
-	COPY(AnimationSpeed);
-	COPY(AnimationTimer);
-	COPY(AnimationFrameDuration);
-	COPY(AnimationLoopIndex);
+    COPY(Sprite);
+    COPY(CurrentAnimation);
+    COPY(CurrentFrame);
+    COPY(CurrentFrameCount);
+    COPY(AnimationSpeedMult);
+    COPY(AnimationSpeedAdd);
+    COPY(PrevAnimation);
+    COPY(AutoAnimate);
+    COPY(AnimationSpeed);
+    COPY(AnimationTimer);
+    COPY(AnimationFrameDuration);
+    COPY(AnimationLoopIndex);
+    COPY(RotationStyle);
 
 	COPY(Hitbox);
 	COPY(FlipFlag);

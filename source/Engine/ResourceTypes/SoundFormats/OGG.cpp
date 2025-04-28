@@ -252,11 +252,10 @@ OGG_Load_FAIL:
 	}
 	ogg = NULL;
 
-OGG_Load_SUCCESS:
-	if (stream) {
-		stream->Close();
-	}
-	return ogg;
+  OGG_Load_SUCCESS:
+    if (stream)
+        stream->Close();
+    return ogg;
 }
 
 size_t OGG::SeekSample(int index) {

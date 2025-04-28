@@ -420,14 +420,14 @@ bool RSDKSceneReader::ReadObjectDefinition(Stream* r, Entity** objSlots, const i
 			obj = objectList->Spawn();
 		}
 
-		if (obj != nullptr) {
-			Entity* obj = objectList->Spawn();
-			obj->X = (X / 65536.f);
-			obj->Y = (Y / 65536.f);
-			obj->InitialX = obj->X;
-			obj->InitialY = obj->Y;
-			obj->List = objectList;
-			obj->SlotID = SlotID;
+        if (obj != nullptr) {
+            Entity* obj = objectList->Spawn();
+            obj->X = (X / 65536.f);
+            obj->Y = (Y / 65536.f);
+            obj->InitialX = obj->X;
+            obj->InitialY = obj->Y;
+            obj->List = objectList;
+            obj->SlotID = SlotID + Application::ReservedSlotIDs;
 
 			// HACK: This is so Player ends up in the
 			// current SlotID,

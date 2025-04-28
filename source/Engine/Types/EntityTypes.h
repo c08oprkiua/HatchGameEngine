@@ -8,17 +8,22 @@ enum { Persistence_NONE, Persistence_SCENE, Persistence_GAME };
 enum { HitboxSide_LEFT = 0, HitboxSide_TOP = 1, HitboxSide_RIGHT = 2, HitboxSide_BOTTOM = 3 };
 
 enum {
-	ACTIVE_NEVER = 0, // Never updates
-	ACTIVE_ALWAYS = 1, // Updates no matter what
-	ACTIVE_NORMAL = 2, // Updates no matter where the object is in
-	// the scene, but not if scene is paused
-	ACTIVE_PAUSED = 3, // Only updates when the scene is paused
-	ACTIVE_BOUNDS = 4, // Updates only when the object is within bounds
-	ACTIVE_XBOUNDS = 5, // Updates within an x bound (not
-	// accounting for y bound)
-	ACTIVE_YBOUNDS = 6, // Updates within a y bound (not accounting
-	// for x bound)
-	ACTIVE_RBOUNDS = 7 // Updates within a radius (UpdateRegionW)
+    HITBOX_LEFT    = 0,
+    HITBOX_TOP     = 1,
+    HITBOX_RIGHT   = 2,
+    HITBOX_BOTTOM  = 3
+};
+
+enum {
+    ACTIVE_NEVER   = 0, // Never updates
+    ACTIVE_ALWAYS  = 1, // Updates no matter what
+    ACTIVE_NORMAL  = 2, // Updates no matter where the object is in the scene, but not if scene is paused
+    ACTIVE_PAUSED  = 3, // Only updates when the scene is paused
+    ACTIVE_BOUNDS  = 4, // Updates only when the object is within bounds
+    ACTIVE_XBOUNDS = 5, // Updates within an x bound (not accounting for y bound)
+    ACTIVE_YBOUNDS = 6, // Updates within a y bound (not accounting for x bound)
+    ACTIVE_RBOUNDS = 7,  // Updates within a radius (UpdateRegionW)
+    ACTIVE_DISABLED = 0xFF, // For stopping entities from even checking for an update in some cases
 };
 
 namespace CollideSide {
@@ -38,13 +43,6 @@ enum {
 struct Sensor {
 	int X;
 	int Y;
-	int Collided;
-	int Angle;
-};
-
-struct CollisionSensor {
-	float X;
-	float Y;
 	int Collided;
 	int Angle;
 };

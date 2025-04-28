@@ -179,8 +179,16 @@ void ScriptEntity::LinkFields() {
     * \ns Instance
     * \desc A field that may be used in <linkto ref="instance.Render"></linkto> for changing the opacity of a sprite.
     */
-	LINK_DEC(Alpha);
-	/***
+    LINK_DEC(Alpha);
+    /***
+   * \field BlendMode
+   * \type Integer
+   * \default BlendMode_NORMAL
+   * \ns Instance
+   * \desc A field that may be used in <linkto ref="instance.Render"></linkto> for changing the BlendMode of a sprite.
+   */
+    LINK_INT(BlendMode);
+    /***
     * \field Priority
     * \type Integer
     * \default 0
@@ -210,7 +218,7 @@ void ScriptEntity::LinkFields() {
     * \type Integer
     * \default -1
     * \ns Instance
-    * \desc The current sprite  animation index of the entity.
+    * \desc The current sprite animation index of the entity.
     */
 	LINK_INT(CurrentAnimation);
 	/***
@@ -276,8 +284,24 @@ void ScriptEntity::LinkFields() {
     * \ns Instance
     * \desc This value is added to the result of <linkto ref="instance.AnimationSpeed"></linkto> * <linkto ref="instance.AnimationSpeedMult"></linkto> when the entity is being animated.
     */
-	LINK_INT(AnimationSpeedAdd);
-	/***
+    LINK_INT(AnimationSpeedAdd);
+    /***
+    * \field PrevAnimation
+    * \type Integer
+    * \default -1
+    * \ns Instance
+    * \desc The previous sprite animation index of the entity, if it was changed.
+    */
+    LINK_INT(PrevAnimation);
+    /***
+    * \field RotationStyle
+    * \type Integer
+    * \default 0
+    * \ns Instance
+    * \desc The way in which a sprite will rotate in some cases.
+    */
+    LINK_INT(RotationStyle);
+    /***
     * \field AutoAnimate
     * \type Boolean
     * \default true
@@ -341,7 +365,15 @@ void ScriptEntity::LinkFields() {
     * \ns Instance
     * \desc A bitfield similar to <linkto ref="instance.ViewRenderFlag"></linkto>. Bypasses each view's entity rendering toggle set by <linkto ref="Scene.SetObjectViewRender"></linkto>.
     */
-	LINK_INT(ViewOverrideFlag);
+    LINK_INT(ViewOverrideFlag);
+    /***
+   * \field Visible
+   * \type Boolean
+   * \default true
+   * \ns Instance
+   * \desc Whether the entity will render.
+   */
+    LINK_INT(Visible);
 
 	/***
     * \field UpdateRegionW
@@ -1513,12 +1545,12 @@ VMValue ScriptEntity::VM_GetHitboxFromSprite(int argCount, VMValue* args, Uint32
  * \ns Instance
  */
 VMValue ScriptEntity::VM_ReturnHitboxFromSprite(int argCount, VMValue* args, Uint32 threadID) {
-	StandardLibrary::CheckArgCount(argCount, 5);
-	ScriptEntity* self = GET_ENTITY(0);
-	ISprite* sprite = GET_ARG(1, GetSprite);
-	int animation = GET_ARG(2, GetInteger);
-	int frame = GET_ARG(3, GetInteger);
-	int hitbox = GET_ARG(4, GetInteger);
+    StandardLibrary::CheckArgCount(argCount, 5);
+    ScriptEntity* self = GET_ENTITY(0);
+    ISprite* sprite = GET_ARG(1, GetSprite);
+    int animation = GET_ARG(2, GetInteger);
+    int frame = GET_ARG(3, GetInteger);
+    int hitbox = GET_ARG(4, GetInteger);
 
 	if (!IsValidEntity(self) || !sprite) {
 		return NULL_VAL;

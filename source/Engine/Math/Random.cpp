@@ -13,9 +13,9 @@ void Random::SetSeed(Sint32 seed) {
 }
 
 float Random::Get() {
-	Sint32 nextSeed = (1103515245 * Seed + 12345) & 0x7FFFFFFF;
-	Seed = nextSeed;
-	return ((float)nextSeed) / (float)0x7FFFFFFF;
+    Sint32 nextSeed = (1103515245 * Seed + 12345) & 0x7FFFFFFF;
+    Seed = nextSeed;
+    return ((float)nextSeed) / (float)0x7FFFFFFF;
 }
 
 float Random::Max(float max) {
