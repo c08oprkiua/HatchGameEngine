@@ -75,8 +75,8 @@ public:
 	static bool UseSoftwareRenderer;
 	static unsigned CurrentFrame;
 	// Rendering functions
-	static GraphicsFunctions Internal;
-	static GraphicsFunctions* GfxFunctions;
+	static GraphicsFunctions *Internal;
+	static GraphicsFunctions *GfxFunctions;
 	static const char* Renderer;
 
 	static void Init();

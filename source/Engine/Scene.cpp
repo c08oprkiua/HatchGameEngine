@@ -865,7 +865,7 @@ void Scene::SetView(int viewIndex) {
 
 		size_t stride = currentView->Software ? (size_t)currentView->Stride : view_w;
 		if (tar->Width != stride || tar->Height != view_h) {
-			Graphics::GfxFunctions = &Graphics::Internal;
+			Graphics::GfxFunctions = Graphics::Internal;
 			Graphics::DisposeTexture(tar);
 			Graphics::SetTextureInterpolation(false);
 			currentView->DrawTarget = Graphics::CreateTexture(

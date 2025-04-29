@@ -13,7 +13,7 @@
 #include <Engine/Bytecode/ScriptManager.h>
 #include <Engine/Bytecode/Types.h>
 
-GraphicsFunctions SoftwareRenderer::BackendFunctions;
+GraphicsFunctions *SoftwareRenderer::BackendFunctions;
 Uint32 SoftwareRenderer::CompareColor = 0xFF000000U;
 TileScanLine SoftwareRenderer::TileScanLineBuffer[MAX_FRAMEBUFFER_HEIGHT];
 Sint32 SoftwareRenderer::SpriteDeformBuffer[MAX_FRAMEBUFFER_HEIGHT];
@@ -98,6 +98,7 @@ void SoftwareRenderer::Init() {
 	SetDotMaskOffsetH(0);
 	SetDotMaskOffsetV(0);
 }
+
 Uint32 SoftwareRenderer::GetWindowFlags() {
 	return Graphics::Internal.GetWindowFlags();
 }
@@ -240,6 +241,7 @@ void SoftwareRenderer::DisposeTexture(Texture* texture) {}
 
 // Viewport and view-related functions
 void SoftwareRenderer::SetRenderTarget(Texture* texture) {}
+
 void SoftwareRenderer::ReadFramebuffer(void* pixels, int width, int height) {
 	if (Graphics::Internal.ReadFramebuffer) {
 		Graphics::Internal.ReadFramebuffer(pixels, width, height);

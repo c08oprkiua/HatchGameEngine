@@ -83,8 +83,8 @@ bool Graphics::UseSoftwareRenderer = false;
 
 unsigned Graphics::CurrentFrame = 0;
 
-GraphicsFunctions Graphics::Internal;
-GraphicsFunctions* Graphics::GfxFunctions = &Graphics::Internal;
+GraphicsFunctions *Graphics::Internal;
+GraphicsFunctions *Graphics::GfxFunctions = Graphics::Internal;
 const char* Graphics::Renderer = "default";
 
 void Graphics::Init() {
@@ -270,7 +270,7 @@ Point Graphics::ProjectToScreen(float x, float y, float z) {
 
 Texture* Graphics::CreateTexture(Uint32 format, Uint32 access, Uint32 width, Uint32 height) {
 	Texture* texture;
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
 		Graphics::NoInternalTextures) {
 		texture = Texture::New(format, access, width, height);
 		if (!texture) {
@@ -312,7 +312,7 @@ Texture* Graphics::CreateTextureFromSurface(SDL_Surface* surface) {
 	return texture;
 }
 int Graphics::LockTexture(Texture* texture, void** pixels, int* pitch) {
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
 		Graphics::NoInternalTextures) {
 		return 1;
 	}
@@ -320,7 +320,7 @@ int Graphics::LockTexture(Texture* texture, void** pixels, int* pitch) {
 }
 int Graphics::UpdateTexture(Texture* texture, SDL_Rect* src, void* pixels, int pitch) {
 	memcpy(texture->Pixels, pixels, sizeof(Uint32) * texture->Width * texture->Height);
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
 		Graphics::NoInternalTextures) {
 		return 1;
 	}
@@ -334,10 +334,10 @@ int Graphics::UpdateYUVTexture(Texture* texture,
 	int pitchU,
 	Uint8* pixelsV,
 	int pitchV) {
-	if (!Graphics::GfxFunctions->UpdateYUVTexture) {
+	if (!Graphics::GfxFunctions) {
 		return 0;
 	}
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
 		Graphics::NoInternalTextures) {
 		return 1;
 	}
@@ -346,15 +346,15 @@ int Graphics::UpdateYUVTexture(Texture* texture,
 }
 int Graphics::SetTexturePalette(Texture* texture, void* palette, unsigned numPaletteColors) {
 	texture->SetPalette((Uint32*)palette, numPaletteColors);
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
-		!Graphics::GfxFunctions->SetTexturePalette || Graphics::NoInternalTextures) {
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
+		!Graphics::GfxFunctions || Graphics::NoInternalTextures) {
 		return 1;
 	}
 	return Graphics::GfxFunctions->SetTexturePalette(texture, palette, numPaletteColors);
 }
 int Graphics::ConvertTextureToRGBA(Texture* texture) {
 	texture->ConvertToRGBA();
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
 		Graphics::NoInternalTextures) {
 		return 1;
 	}
@@ -372,7 +372,7 @@ int Graphics::ConvertTextureToPalette(Texture* texture, unsigned paletteNumber) 
 	texture->ConvertToPalette(colors, 256);
 	texture->SetPalette(colors, 256);
 
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions ||
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions ||
 		Graphics::NoInternalTextures) {
 		return 1;
 	}
@@ -383,7 +383,7 @@ int Graphics::ConvertTextureToPalette(Texture* texture, unsigned paletteNumber) 
 		return 0;
 	}
 
-	if (Graphics::GfxFunctions->SetTexturePalette) {
+	if (Graphics::GfxFunctions) {
 		ok |= Graphics::GfxFunctions->SetTexturePalette(
 			texture, texture->PaletteColors, texture->NumPaletteColors);
 	}
@@ -461,8 +461,8 @@ Uint32 Graphics::CreateVertexBuffer(Uint32 maxVertices, int unloadPolicy) {
 	}
 
 	VertexBuffer* vtxbuf;
-	if (Graphics::Internal.CreateVertexBuffer) {
-		vtxbuf = (VertexBuffer*)Graphics::Internal.CreateVertexBuffer(maxVertices);
+	if (Graphics::Internal) {
+		vtxbuf = (VertexBuffer*)Graphics::Internal->CreateVertexBuffer(maxVertices);
 	}
 	else {
 		vtxbuf = new VertexBuffer(maxVertices);
@@ -491,8 +491,8 @@ void Graphics::DeleteVertexBuffer(Uint32 vertexBufferIndex) {
 		return;
 	}
 
-	if (Graphics::Internal.DeleteVertexBuffer) {
-		Graphics::Internal.DeleteVertexBuffer(Graphics::VertexBuffers[vertexBufferIndex]);
+	if (Graphics::Internal) {
+		Graphics::Internal->DeleteVertexBuffer(Graphics::VertexBuffers[vertexBufferIndex]);
 	}
 	else {
 		delete Graphics::VertexBuffers[vertexBufferIndex];
@@ -517,12 +517,12 @@ void Graphics::Present() {
 }
 
 void Graphics::SoftwareStart() {
-	Graphics::GfxFunctions = &SoftwareRenderer::BackendFunctions;
+	Graphics::GfxFunctions = SoftwareRenderer::BackendFunctions;
 	SoftwareRenderer::RenderStart();
 }
 void Graphics::SoftwareEnd() {
 	SoftwareRenderer::RenderEnd();
-	Graphics::GfxFunctions = &Graphics::Internal;
+	Graphics::GfxFunctions = Graphics::Internal;
 	Graphics::UpdateTexture(Graphics::CurrentRenderTarget,
 		NULL,
 		Graphics::CurrentRenderTarget->Pixels,
@@ -530,7 +530,7 @@ void Graphics::SoftwareEnd() {
 }
 
 void Graphics::UpdateGlobalPalette() {
-	if (!Graphics::GfxFunctions->UpdateGlobalPalette) {
+	if (!Graphics::GfxFunctions) {
 		return;
 	}
 
@@ -606,9 +606,6 @@ void Graphics::CopyScreen(int source_x,
 	int dest_w,
 	int dest_h,
 	Texture* texture) {
-	if (!Graphics::GfxFunctions->ReadFramebuffer) {
-		return;
-	}
 
 	if (source_x == 0 && source_y == 0 && dest_x == 0 && dest_y == 0 && dest_w == source_w &&
 		dest_h == source_h) {
@@ -1037,7 +1034,7 @@ void Graphics::DrawSpritePart(ISprite* sprite,
 
 void Graphics::DrawTile(int tile, int x, int y, bool flipX, bool flipY) {
 	// If possible, uses optimized software-renderer call instead.
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions) {
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
 		SoftwareRenderer::DrawTile(tile, x, y, flipX, flipY);
 		return;
 	}
@@ -1517,7 +1514,7 @@ void Graphics::DrawSceneLayer(SceneLayer* layer,
 	int layerIndex,
 	bool useCustomFunction) {
 	// If possible, uses optimized software-renderer call instead.
-	if (Graphics::GfxFunctions == &SoftwareRenderer::BackendFunctions) {
+	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
 		SoftwareRenderer::DrawSceneLayer(layer, currentView, layerIndex, useCustomFunction);
 		return;
 	}
@@ -1558,7 +1555,7 @@ void Graphics::DrawPolygon3D(void* data,
 	Texture* texture,
 	Matrix4x4* modelMatrix,
 	Matrix4x4* normalMatrix) {
-	if (Graphics::GfxFunctions->DrawPolygon3D) {
+	if (Graphics::GfxFunctions){
 		Graphics::GfxFunctions->DrawPolygon3D(
 			data, vertexCount, vertexFlag, texture, modelMatrix, normalMatrix);
 	}
@@ -1570,7 +1567,7 @@ void Graphics::DrawSceneLayer3D(void* layer,
 	int sh,
 	Matrix4x4* modelMatrix,
 	Matrix4x4* normalMatrix) {
-	if (Graphics::GfxFunctions->DrawSceneLayer3D) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DrawSceneLayer3D(
 			layer, sx, sy, sw, sh, modelMatrix, normalMatrix);
 	}
@@ -1580,7 +1577,7 @@ void Graphics::DrawModel(void* model,
 	Uint32 frame,
 	Matrix4x4* modelMatrix,
 	Matrix4x4* normalMatrix) {
-	if (Graphics::GfxFunctions->DrawModel) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DrawModel(
 			model, animation, frame, modelMatrix, normalMatrix);
 	}
@@ -1589,7 +1586,7 @@ void Graphics::DrawModelSkinned(void* model,
 	Uint16 armature,
 	Matrix4x4* modelMatrix,
 	Matrix4x4* normalMatrix) {
-	if (Graphics::GfxFunctions->DrawModelSkinned) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DrawModelSkinned(
 			model, armature, modelMatrix, normalMatrix);
 	}
@@ -1597,7 +1594,7 @@ void Graphics::DrawModelSkinned(void* model,
 void Graphics::DrawVertexBuffer(Uint32 vertexBufferIndex,
 	Matrix4x4* modelMatrix,
 	Matrix4x4* normalMatrix) {
-	if (Graphics::GfxFunctions->DrawVertexBuffer) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DrawVertexBuffer(
 			vertexBufferIndex, modelMatrix, normalMatrix);
 	}
@@ -1608,13 +1605,13 @@ void Graphics::BindVertexBuffer(Uint32 vertexBufferIndex) {
 		return;
 	}
 
-	if (Graphics::GfxFunctions->BindVertexBuffer) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->BindVertexBuffer(vertexBufferIndex);
 	}
 	CurrentVertexBuffer = vertexBufferIndex;
 }
 void Graphics::UnbindVertexBuffer() {
-	if (Graphics::GfxFunctions->UnbindVertexBuffer) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->UnbindVertexBuffer();
 	}
 	CurrentVertexBuffer = -1;
@@ -1639,7 +1636,7 @@ void Graphics::BindScene3D(Uint32 sceneIndex) {
 		}
 	}
 
-	if (Graphics::GfxFunctions->BindScene3D) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->BindScene3D(sceneIndex);
 	}
 	CurrentScene3D = sceneIndex;
@@ -1652,12 +1649,12 @@ void Graphics::ClearScene3D(Uint32 sceneIndex) {
 	Scene3D* scene = &Graphics::Scene3Ds[sceneIndex];
 	scene->Clear();
 
-	if (Graphics::GfxFunctions->ClearScene3D) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->ClearScene3D(sceneIndex);
 	}
 }
 void Graphics::DrawScene3D(Uint32 sceneIndex, Uint32 drawMode) {
-	if (Graphics::GfxFunctions->DrawScene3D) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DrawScene3D(sceneIndex, drawMode);
 	}
 }
@@ -1680,8 +1677,8 @@ void Graphics::DeleteScene3D(Uint32 sceneIndex) {
 
 	Scene3D* scene = &Graphics::Scene3Ds[sceneIndex];
 	if (scene->Initialized) {
-		if (Graphics::Internal.DeleteVertexBuffer) {
-			Graphics::Internal.DeleteVertexBuffer(scene->Buffer);
+		if (Graphics::Internal) {
+			Graphics::Internal->DeleteVertexBuffer(scene->Buffer);
 		}
 		else {
 			delete scene->Buffer;
@@ -1705,8 +1702,8 @@ void Graphics::InitScene3D(Uint32 sceneIndex, Uint32 numVertices) {
 		numVertices = 192;
 	}
 
-	if (Graphics::Internal.CreateVertexBuffer) {
-		scene->Buffer = (VertexBuffer*)Graphics::Internal.CreateVertexBuffer(numVertices);
+	if (Graphics::Internal) {
+		scene->Buffer = (VertexBuffer*)Graphics::Internal->CreateVertexBuffer(numVertices);
 	}
 	else {
 		scene->Buffer = new VertexBuffer(numVertices);
@@ -1805,18 +1802,18 @@ void Graphics::MakeSpritePolygonUVs(VertexAttribute data[4],
 }
 
 void Graphics::MakeFrameBufferID(ISprite* sprite) {
-	if (Graphics::GfxFunctions->MakeFrameBufferID) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->MakeFrameBufferID(sprite);
 	}
 }
 void Graphics::DeleteFrameBufferID(ISprite* sprite) {
-	if (Graphics::GfxFunctions->DeleteFrameBufferID) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DeleteFrameBufferID(sprite);
 	}
 }
 
 void Graphics::SetDepthTesting(bool enabled) {
-	if (Graphics::GfxFunctions->SetDepthTesting) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->SetDepthTesting(enabled);
 	}
 }
@@ -1857,12 +1854,12 @@ void Graphics::ConvertFromNativeToARGB(Uint32* argb, int count) {
 }
 
 void Graphics::SetStencilEnabled(bool enabled) {
-	if (Graphics::GfxFunctions->SetStencilEnabled) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->SetStencilEnabled(enabled);
 	}
 }
 bool Graphics::GetStencilEnabled() {
-	if (Graphics::GfxFunctions->IsStencilEnabled) {
+	if (Graphics::GfxFunctions) {
 		return Graphics::GfxFunctions->IsStencilEnabled();
 	}
 
@@ -1871,7 +1868,7 @@ bool Graphics::GetStencilEnabled() {
 void Graphics::SetStencilTestFunc(int stencilTest) {
 	if (stencilTest >= StencilTest_Never && stencilTest <= StencilTest_GEqual) {
 		StencilTest = stencilTest;
-		if (Graphics::GfxFunctions->SetStencilTestFunc) {
+		if (Graphics::GfxFunctions) {
 			Graphics::GfxFunctions->SetStencilTestFunc(stencilTest);
 		}
 	}
@@ -1879,7 +1876,7 @@ void Graphics::SetStencilTestFunc(int stencilTest) {
 void Graphics::SetStencilPassFunc(int stencilOp) {
 	if (stencilOp >= StencilOp_Keep && stencilOp <= StencilOp_DecrWrap) {
 		StencilOpPass = stencilOp;
-		if (Graphics::GfxFunctions->SetStencilPassFunc) {
+		if (Graphics::GfxFunctions) {
 			Graphics::GfxFunctions->SetStencilPassFunc(stencilOp);
 		}
 	}
@@ -1887,7 +1884,7 @@ void Graphics::SetStencilPassFunc(int stencilOp) {
 void Graphics::SetStencilFailFunc(int stencilOp) {
 	if (stencilOp >= StencilOp_Keep && stencilOp <= StencilOp_DecrWrap) {
 		StencilOpFail = stencilOp;
-		if (Graphics::GfxFunctions->SetStencilFailFunc) {
+		if (Graphics::GfxFunctions) {
 			Graphics::GfxFunctions->SetStencilFailFunc(stencilOp);
 		}
 	}
@@ -1899,7 +1896,7 @@ void Graphics::SetStencilValue(int value) {
 	else if (value > 255) {
 		value = 255;
 	}
-	if (Graphics::GfxFunctions->SetStencilValue) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->SetStencilValue(value);
 	}
 }
@@ -1910,12 +1907,12 @@ void Graphics::SetStencilMask(int mask) {
 	else if (mask > 255) {
 		mask = 255;
 	}
-	if (Graphics::GfxFunctions->SetStencilMask) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->SetStencilMask(mask);
 	}
 }
 void Graphics::ClearStencil() {
-	if (Graphics::GfxFunctions->ClearStencil) {
+	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->ClearStencil();
 	}
 }
