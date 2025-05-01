@@ -69,67 +69,7 @@ void SDL2Renderer::SetVSync(bool enabled) {
 	Graphics::VsyncEnabled = enabled;
 	SDL_RenderSetVSync(Renderer, enabled);
 }
-void SDL2Renderer::SetGraphicsFunctions() {
-	Graphics::PixelOffset = 0.0f;
 
-	Graphics::Internal.Init = SDL2Renderer::Init;
-	Graphics::Internal.GetWindowFlags = SDL2Renderer::GetWindowFlags;
-	Graphics::Internal.SetVSync = SDL2Renderer::SetVSync;
-	Graphics::Internal.Dispose = SDL2Renderer::Dispose;
-
-	// Texture management functions
-	Graphics::Internal.CreateTexture = SDL2Renderer::CreateTexture;
-	Graphics::Internal.LockTexture = SDL2Renderer::LockTexture;
-	Graphics::Internal.UpdateTexture = SDL2Renderer::UpdateTexture;
-	Graphics::Internal.UpdateYUVTexture = SDL2Renderer::UpdateTextureYUV;
-	Graphics::Internal.UnlockTexture = SDL2Renderer::UnlockTexture;
-	Graphics::Internal.DisposeTexture = SDL2Renderer::DisposeTexture;
-
-	// Viewport and view-related functions
-	Graphics::Internal.SetRenderTarget = SDL2Renderer::SetRenderTarget;
-	Graphics::Internal.UpdateWindowSize = SDL2Renderer::UpdateWindowSize;
-	Graphics::Internal.UpdateViewport = SDL2Renderer::UpdateViewport;
-	Graphics::Internal.UpdateClipRect = SDL2Renderer::UpdateClipRect;
-	Graphics::Internal.UpdateOrtho = SDL2Renderer::UpdateOrtho;
-	Graphics::Internal.UpdatePerspective = SDL2Renderer::UpdatePerspective;
-	Graphics::Internal.UpdateProjectionMatrix = SDL2Renderer::UpdateProjectionMatrix;
-	Graphics::Internal.MakePerspectiveMatrix = SDL2Renderer::MakePerspectiveMatrix;
-
-	// Shader-related functions
-	Graphics::Internal.UseShader = SDL2Renderer::UseShader;
-	Graphics::Internal.SetUniformF = SDL2Renderer::SetUniformF;
-	Graphics::Internal.SetUniformI = SDL2Renderer::SetUniformI;
-	Graphics::Internal.SetUniformTexture = SDL2Renderer::SetUniformTexture;
-
-	// These guys
-	Graphics::Internal.Clear = SDL2Renderer::Clear;
-	Graphics::Internal.Present = SDL2Renderer::Present;
-
-	// Draw mode setting functions
-	Graphics::Internal.SetBlendColor = SDL2Renderer::SetBlendColor;
-	Graphics::Internal.SetBlendMode = SDL2Renderer::SetBlendMode;
-	Graphics::Internal.SetTintColor = SDL2Renderer::SetTintColor;
-	Graphics::Internal.SetTintMode = SDL2Renderer::SetTintMode;
-	Graphics::Internal.SetTintEnabled = SDL2Renderer::SetTintEnabled;
-	Graphics::Internal.SetLineWidth = SDL2Renderer::SetLineWidth;
-
-	// Primitive drawing functions
-	Graphics::Internal.StrokeLine = SDL2Renderer::StrokeLine;
-	Graphics::Internal.StrokeCircle = SDL2Renderer::StrokeCircle;
-	Graphics::Internal.StrokeEllipse = SDL2Renderer::StrokeEllipse;
-	Graphics::Internal.StrokeRectangle = SDL2Renderer::StrokeRectangle;
-	Graphics::Internal.FillCircle = SDL2Renderer::FillCircle;
-	Graphics::Internal.FillEllipse = SDL2Renderer::FillEllipse;
-	Graphics::Internal.FillTriangle = SDL2Renderer::FillTriangle;
-	Graphics::Internal.FillRectangle = SDL2Renderer::FillRectangle;
-
-	// Texture drawing functions
-	Graphics::Internal.DrawTexture = SDL2Renderer::DrawTexture;
-	Graphics::Internal.DrawSprite = SDL2Renderer::DrawSprite;
-	Graphics::Internal.DrawSpritePart = SDL2Renderer::DrawSpritePart;
-
-	Graphics::Internal.MakeFrameBufferID = SDL2Renderer::MakeFrameBufferID;
-}
 void SDL2Renderer::Dispose() {
 	SDL_DestroyRenderer(Renderer);
 }
@@ -156,7 +96,7 @@ int SDL2Renderer::UpdateTexture(Texture* texture, SDL_Rect* src, void* pixels, i
 	SDL_Texture* textureData = *(SDL_Texture**)texture->DriverData;
 	return SDL_UpdateTexture(textureData, src, pixels, pitch);
 }
-int SDL2Renderer::UpdateTextureYUV(Texture* texture,
+int SDL2Renderer::UpdateYUVTexture(Texture* texture,
 	SDL_Rect* src,
 	void* pixelsY,
 	int pitchY,
@@ -169,6 +109,7 @@ int SDL2Renderer::UpdateTextureYUV(Texture* texture,
 	return 0;
 }
 void SDL2Renderer::UnlockTexture(Texture* texture) {}
+
 void SDL2Renderer::DisposeTexture(Texture* texture) {
 	SDL_Texture** textureData = (SDL_Texture**)texture->DriverData;
 	if (!textureData) {

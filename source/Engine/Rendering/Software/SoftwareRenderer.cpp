@@ -19,9 +19,9 @@ TileScanLine SoftwareRenderer::TileScanLineBuffer[MAX_FRAMEBUFFER_HEIGHT];
 Sint32 SoftwareRenderer::SpriteDeformBuffer[MAX_FRAMEBUFFER_HEIGHT];
 bool SoftwareRenderer::UseSpriteDeform = false;
 Contour SoftwareRenderer::ContourBuffer[MAX_FRAMEBUFFER_HEIGHT];
-int SoftwareRenderer::MultTable[0x10000];
-int SoftwareRenderer::MultTableInv[0x10000];
-int SoftwareRenderer::MultSubTable[0x10000];
+//int SoftwareRenderer::MultTable[0x10000];
+//int SoftwareRenderer::MultTableInv[0x10000];
+//int SoftwareRenderer::MultSubTable[0x10000];
 
 BlendState CurrentBlendState;
 
@@ -89,7 +89,7 @@ int FilterBlackAndWhite[0x8000];
 
 // Initialization and disposal functions
 void SoftwareRenderer::Init() {
-	SoftwareRenderer::BackendFunctions.Init();
+	SoftwareRenderer::BackendFunctions->Init();
 
 	UseStencil = false;
 	UseSpriteDeform = false;
@@ -100,16 +100,22 @@ void SoftwareRenderer::Init() {
 }
 
 Uint32 SoftwareRenderer::GetWindowFlags() {
-	return Graphics::Internal.GetWindowFlags();
+	return Graphics::Internal->GetWindowFlags();
 }
-void SoftwareRenderer::SetGraphicsFunctions() {
-	for (int alpha = 0; alpha < 0x100; alpha++) {
-		for (int color = 0; color < 0x100; color++) {
-			MultTable[alpha << 8 | color] = (alpha * color) >> 8;
-			MultTableInv[alpha << 8 | color] = ((alpha ^ 0xFF) * color) >> 8;
-			MultSubTable[alpha << 8 | color] = (alpha * -(color ^ 0xFF)) >> 8;
-		}
-	}
+
+void SoftwareRenderer::BackendSetup() {
+	CurrentBlendState.Mode = BlendMode_NORMAL;
+	CurrentBlendState.Opacity = 0xFF;
+	CurrentBlendState.FilterTable = nullptr;
+
+
+// 	for (int alpha = 0; alpha < 0x100; alpha++) {
+// 		for (int color = 0; color < 0x100; color++) {
+// 			MultTable[alpha << 8 | color] = (alpha * color) >> 8;
+// 			MultTableInv[alpha << 8 | color] = ((alpha ^ 0xFF) * color) >> 8;
+// 			MultSubTable[alpha << 8 | color] = (alpha * -(color ^ 0xFF)) >> 8;
+// 		}
+// 	}
 
 	for (int a = 0; a < TRIG_TABLE_SIZE; a++) {
 		float ang = a * M_PI / TRIG_TABLE_HALF;
@@ -127,10 +133,11 @@ void SoftwareRenderer::SetGraphicsFunctions() {
 		FilterInvert[a] = (hex ^ 0xFFFFFF) | 0xFF000000U;
 	}
 
-	CurrentBlendState.Mode = BlendMode_NORMAL;
-	CurrentBlendState.Opacity = 0xFF;
-	CurrentBlendState.FilterTable = nullptr;
 
+
+	SoftwareRenderer::BackendFunctions = this;
+
+	/*
 	SoftwareRenderer::BackendFunctions.Init = SoftwareRenderer::Init;
 	SoftwareRenderer::BackendFunctions.GetWindowFlags = SoftwareRenderer::GetWindowFlags;
 	SoftwareRenderer::BackendFunctions.Dispose = SoftwareRenderer::Dispose;
@@ -213,7 +220,9 @@ void SoftwareRenderer::SetGraphicsFunctions() {
 	SoftwareRenderer::BackendFunctions.ClearStencil = SoftwareRenderer::ClearStencil;
 
 	SoftwareRenderer::BackendFunctions.MakeFrameBufferID = SoftwareRenderer::MakeFrameBufferID;
+	*/
 }
+
 void SoftwareRenderer::Dispose() {}
 
 void SoftwareRenderer::RenderStart() {
@@ -243,27 +252,27 @@ void SoftwareRenderer::DisposeTexture(Texture* texture) {}
 void SoftwareRenderer::SetRenderTarget(Texture* texture) {}
 
 void SoftwareRenderer::ReadFramebuffer(void* pixels, int width, int height) {
-	if (Graphics::Internal.ReadFramebuffer) {
-		Graphics::Internal.ReadFramebuffer(pixels, width, height);
+	if (Graphics::Internal) {
+		Graphics::Internal->ReadFramebuffer(pixels, width, height);
 	}
 }
 void SoftwareRenderer::UpdateWindowSize(int width, int height) {
-	Graphics::Internal.UpdateWindowSize(width, height);
+	Graphics::Internal->UpdateWindowSize(width, height);
 }
 void SoftwareRenderer::UpdateViewport() {
-	Graphics::Internal.UpdateViewport();
+	Graphics::Internal->UpdateViewport();
 }
 void SoftwareRenderer::UpdateClipRect() {
-	Graphics::Internal.UpdateClipRect();
+	Graphics::Internal->UpdateClipRect();
 }
 void SoftwareRenderer::UpdateOrtho(float left, float top, float right, float bottom) {
-	Graphics::Internal.UpdateOrtho(left, top, right, bottom);
+	Graphics::Internal->UpdateOrtho(left, top, right, bottom);
 }
 void SoftwareRenderer::UpdatePerspective(float fovy, float aspect, float nearv, float farv) {
-	Graphics::Internal.UpdatePerspective(fovy, aspect, nearv, farv);
+	Graphics::Internal->UpdatePerspective(fovy, aspect, nearv, farv);
 }
 void SoftwareRenderer::UpdateProjectionMatrix() {
-	Graphics::Internal.UpdateProjectionMatrix();
+	Graphics::Internal->UpdateProjectionMatrix();
 }
 void SoftwareRenderer::MakePerspectiveMatrix(Matrix4x4* out,
 	float fov,
@@ -497,6 +506,155 @@ bool SoftwareRenderer::AlterBlendState(BlendState& state) {
 #define ISOLATE_G(color) (color & 0x00FF00)
 #define ISOLATE_B(color) (color & 0x0000FF)
 
+PixelFunction NewPixelFunction(Uint32 *src, Uint32 *dst, BlendState& state, int blendFlag){
+	if (blendFlag & BlendFlag_TINT_BIT) {
+
+		switch (blendFlag & BlendFlag_MODE_MASK){
+			case 0:
+				CurrentPixelFunction = SoftwareRenderer::PixelTintSetOpaque;
+				break;
+			case 1:
+				CurrentPixelFunction = SoftwareRenderer::PixelTintSetTransparent;
+				break;
+			case 2:
+				CurrentPixelFunction = SoftwareRenderer::PixelTintSetAdditive;
+				break;
+			case 3:
+				CurrentPixelFunction = SoftwareRenderer::PixelTintSetSubtract;
+				break;
+			case 4:
+				CurrentPixelFunction = SoftwareRenderer::PixelTintSetMatchEqual;
+				break;
+			case 5:
+				CurrentPixelFunction = SoftwareRenderer::PixelTintSetMatchNotEqual;
+				break;
+		}
+	}
+	else {
+		switch (blendFlag & BlendFlag_MODE_MASK){
+			case 0:
+				CurrentPixelFunction = SoftwareRenderer::PixelNoFiltSetOpaque;
+				break;
+			case 1:
+				CurrentPixelFunction = SoftwareRenderer::PixelNoFiltSetTransparent;
+				break;
+			case 2:
+				CurrentPixelFunction = SoftwareRenderer::PixelNoFiltSetAdditive;
+				break;
+			case 3:
+				CurrentPixelFunction = SoftwareRenderer::PixelNoFiltSetSubtract;
+				break;
+			case 4:
+				CurrentPixelFunction = SoftwareRenderer::PixelNoFiltSetMatchEqual;
+				break;
+			case 5:
+				CurrentPixelFunction = SoftwareRenderer::PixelNoFiltSetMatchNotEqual;
+				break;
+		}
+	}
+
+	if (DotMaskH || DotMaskV) {
+		if (DotMaskH && DotMaskV) {
+			return SoftwareRenderer::PixelDotMaskHV;
+			/*
+			void SoftwareRenderer::PixelDotMaskHV(Uint32* src,
+				Uint32* dst,
+				BlendState& state,
+				int* multTableAt,
+				int* multSubTableAt) {
+				size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
+
+				int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
+				int y = (pos / Graphics::CurrentRenderTarget->Width) + DotMaskOffsetV;
+				if (x & DotMaskH || y & DotMaskV) {
+					return;
+				}
+
+				if (UseStencil) {
+					PixelStencil(src, dst, state, multTableAt, multSubTableAt);
+				}
+				else {
+					CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
+				}
+			}
+			*/
+		}
+		else if (DotMaskH) {
+			return SoftwareRenderer::PixelDotMaskH;
+			/*
+			void SoftwareRenderer::PixelDotMaskH(Uint32* src,
+				Uint32* dst,
+				BlendState& state,
+				int* multTableAt,
+				int* multSubTableAt) {
+				size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
+
+				int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
+				if (x & DotMaskH) {
+					return;
+				}
+
+				if (UseStencil) {
+					PixelStencil(src, dst, state, multTableAt, multSubTableAt);
+				}
+				else {
+					CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
+				}
+			}
+			*/
+		}
+		else if (DotMaskV) {
+			return SoftwareRenderer::PixelDotMaskV;
+			/*
+			void SoftwareRenderer::PixelDotMaskH(Uint32* src,
+				Uint32* dst,
+				BlendState& state,
+				int* multTableAt,
+				int* multSubTableAt) {
+				size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
+
+				int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
+				if (x & DotMaskH) {
+					return;
+				}
+
+				if (UseStencil) {
+					PixelStencil(src, dst, state, multTableAt, multSubTableAt);
+				}
+				else {
+					CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
+				}
+			}
+			*/
+		}
+	}
+	else if (UseStencil) {
+		return SoftwareRenderer::PixelStencil;
+		/*
+		void SoftwareRenderer::PixelStencil(Uint32* src,
+			Uint32* dst,
+			BlendState& state,
+			int* multTableAt,
+			int* multSubTableAt) {
+			size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
+
+			View* currentView = Graphics::CurrentView;
+			Uint8* buffer = &currentView->StencilBuffer[pos];
+			if (StencilFuncTest(buffer, StencilValue, StencilMask)) {
+				CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
+				StencilFuncPass(buffer, StencilValue);
+			}
+			else {
+				StencilFuncFail(buffer, StencilValue);
+			}
+		}
+		*/
+	}
+
+	return CurrentPixelFunction;
+}
+
+
 void SoftwareRenderer::PixelNoFiltSetOpaque(Uint32* src,
 	Uint32* dst,
 	BlendState& state,
@@ -509,10 +667,9 @@ void SoftwareRenderer::PixelNoFiltSetTransparent(Uint32* src,
 	BlendState& state,
 	int* multTableAt,
 	int* multSubTableAt) {
-	int* multInvTableAt = &MultTableInv[state.Opacity << 8];
-	*dst = 0xFF000000U | (multTableAt[GET_R(*src)] + multInvTableAt[GET_R(*dst)]) << 16 |
-		(multTableAt[GET_G(*src)] + multInvTableAt[GET_G(*dst)]) << 8 |
-		(multTableAt[GET_B(*src)] + multInvTableAt[GET_B(*dst)]);
+	*dst = 0xFF000000U | (multTableAt[GET_R(*src)] + MultTableInv[(state.Opacity << 8) + GET_R(*dst)]) << 16 |
+		(multTableAt[GET_G(*src)] + MultTableInv[(state.Opacity << 8) + GET_G(*dst)]) << 8 |
+		(multTableAt[GET_B(*src)] + MultTableInv[(state.Opacity << 8) + GET_B(*dst)]);
 }
 void SoftwareRenderer::PixelNoFiltSetAdditive(Uint32* src,
 	Uint32* dst,
@@ -2001,7 +2158,7 @@ void SoftwareRenderer::StrokeThickCircle(float x, float y, float rad, float thic
 	float radA = rad + (thickness * 0.5);
 	float radB = radA - thickness;
 	if (radB <= 0.0) {
-		SoftwareRenderer::FillCircle(x, y, rad);
+		FillCircle(x, y, rad);
 		return;
 	}
 
@@ -2491,8 +2648,6 @@ void SoftwareRenderer::FillRectangle(float x, float y, float w, float h) {
 		SetTintFunction(blendFlag);
 	}
 
-	int* multTableAt = &MultTable[opacity << 8];
-	int* multSubTableAt = &MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	if (!UseStencil &&
@@ -2503,6 +2658,9 @@ void SoftwareRenderer::FillRectangle(float x, float y, float w, float h) {
 		}
 	}
 	else {
+		int* multTableAt = &MultTable[opacity << 8];
+		int* multSubTableAt = &MultSubTable[opacity << 8];
+
 		PixelFunction pixelFunction = GetPixelFunction(blendFlag);
 
 		for (int dst_y = dst_y1; dst_y < dst_y2; dst_y++) {
@@ -3075,6 +3233,7 @@ void DrawSpriteImage(Texture* texture,
 #undef DRAW_FLIPY
 #undef DRAW_FLIPXY
 }
+
 void DrawSpriteImageTransformed(Texture* texture,
 	int x,
 	int y,

@@ -30,10 +30,10 @@ void Math::Init() {
 	Math::CalculateTrigAngles();
 }
 // Trig functions
-float Math::Cos(float n) {
+constexpr float Math::Cos(float n) {
 	return std::cos(n);
 }
-float Math::Sin(float n) {
+constexpr float Math::Sin(float n) {
 	return std::sin(n);
 }
 float Math::Tan(float n) {
@@ -81,6 +81,7 @@ void Math::ClearTrigLookupTables() {
 	memset(ArcTan256LookupTable, 0, sizeof(ArcTan256LookupTable));
 	randSeed = 0;
 }
+
 void Math::CalculateTrigAngles() {
 	randSeed = rand();
 

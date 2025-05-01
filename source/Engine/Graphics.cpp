@@ -130,10 +130,17 @@ void Graphics::Init() {
 
 	Graphics::Initialized = true;
 }
+
 void Graphics::ChooseBackend() {
 	char renderer[64];
 
-	SoftwareRenderer::SetGraphicsFunctions();
+	//GfxFunctions = new SoftwareRenderer;
+
+	SoftwareRenderer::BackendFunctions = new SoftwareRenderer;
+
+	SoftwareRenderer::BackendFunctions->BackendSetup();
+
+	//GfxFunctions->SetGraphicsFunctions();
 
 	// Set renderers
 	Graphics::Renderer = NULL;
@@ -141,7 +148,8 @@ void Graphics::ChooseBackend() {
 #ifdef USING_OPENGL
 		if (!strcmp(renderer, "opengl")) {
 			Graphics::Renderer = "opengl";
-			GLRenderer::SetGraphicsFunctions();
+			Graphics::PixelOffset = 0.0f;
+			Graphics::Internal = new GLRenderer;
 			return;
 		}
 #endif
@@ -154,7 +162,8 @@ void Graphics::ChooseBackend() {
 #endif
 		if (!strcmp(renderer, "sdl2")) {
 			Graphics::Renderer = "sdl2";
-			SDL2Renderer::SetGraphicsFunctions();
+			Graphics::PixelOffset = 0.0f;
+			Graphics::Internal = new SDL2Renderer;
 			return;
 		}
 		if (!Graphics::Renderer) {
@@ -174,7 +183,8 @@ void Graphics::ChooseBackend() {
 #ifdef USING_OPENGL
 	if (!Graphics::Renderer) {
 		Graphics::Renderer = "opengl";
-		GLRenderer::SetGraphicsFunctions();
+		Graphics::PixelOffset = 0.0f;
+		Graphics::Internal = new GLRenderer;
 	}
 #endif
 #ifdef USING_METAL
@@ -186,7 +196,9 @@ void Graphics::ChooseBackend() {
 
 	if (!Graphics::Renderer) {
 		Graphics::Renderer = "sdl2";
-		SDL2Renderer::SetGraphicsFunctions();
+		Graphics::PixelOffset = 0.0f;
+		Graphics::Internal = new SDL2Renderer;
+		//SDL2Renderer::SetGraphicsFunctions();
 	}
 }
 Uint32 Graphics::GetWindowFlags() {
@@ -1034,10 +1046,10 @@ void Graphics::DrawSpritePart(ISprite* sprite,
 
 void Graphics::DrawTile(int tile, int x, int y, bool flipX, bool flipY) {
 	// If possible, uses optimized software-renderer call instead.
-	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
-		SoftwareRenderer::DrawTile(tile, x, y, flipX, flipY);
-		return;
-	}
+// 	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
+// 		SoftwareRenderer::DrawTile(tile, x, y, flipX, flipY);
+// 		return;
+// 	}
 
 	TileSpriteInfo info = Scene::TileSpriteInfos[tile];
 	DrawSprite(info.Sprite,
@@ -1051,6 +1063,7 @@ void Graphics::DrawTile(int tile, int x, int y, bool flipX, bool flipY) {
 		1.0f,
 		0.0f);
 }
+
 void Graphics::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View* currentView) {
 	int tileWidth = Scene::TileWidth;
 	int tileWidthHalf = tileWidth >> 1;
@@ -1508,16 +1521,18 @@ void Graphics::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View* curren
 		}
 	}
 }
+
 void Graphics::DrawSceneLayer_VerticalParallax(SceneLayer* layer, View* currentView) {}
+
 void Graphics::DrawSceneLayer(SceneLayer* layer,
 	View* currentView,
 	int layerIndex,
 	bool useCustomFunction) {
 	// If possible, uses optimized software-renderer call instead.
-	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
-		SoftwareRenderer::DrawSceneLayer(layer, currentView, layerIndex, useCustomFunction);
-		return;
-	}
+// 	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
+// 		SoftwareRenderer::DrawSceneLayer(layer, currentView, layerIndex, useCustomFunction);
+// 		return;
+// 	}
 
 	if (layer->UsingCustomRenderFunction && useCustomFunction) {
 		Graphics::RunCustomSceneLayerFunction(&layer->CustomRenderFunction, layerIndex);
@@ -1641,6 +1656,7 @@ void Graphics::BindScene3D(Uint32 sceneIndex) {
 	}
 	CurrentScene3D = sceneIndex;
 }
+
 void Graphics::ClearScene3D(Uint32 sceneIndex) {
 	if (sceneIndex < 0 || sceneIndex >= MAX_3D_SCENES) {
 		return;
@@ -1653,6 +1669,7 @@ void Graphics::ClearScene3D(Uint32 sceneIndex) {
 		Graphics::GfxFunctions->ClearScene3D(sceneIndex);
 	}
 }
+
 void Graphics::DrawScene3D(Uint32 sceneIndex, Uint32 drawMode) {
 	if (Graphics::GfxFunctions) {
 		Graphics::GfxFunctions->DrawScene3D(sceneIndex, drawMode);

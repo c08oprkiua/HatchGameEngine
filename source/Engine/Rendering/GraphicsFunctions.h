@@ -12,7 +12,7 @@ struct GraphicsFunctions {
 	virtual void Init() = 0;
 	virtual Uint32 GetWindowFlags() = 0;
 	virtual void SetVSync(bool enable) = 0;
-	virtual void SetGraphicsFunctions() = 0;
+	virtual void BackendSetup() = 0;
 	virtual void Dispose() = 0;
 
 	virtual Texture* CreateTexture(Uint32 format, Uint32 access, Uint32 width, Uint32 height) = 0;

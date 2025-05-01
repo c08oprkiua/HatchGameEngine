@@ -305,7 +305,7 @@ void GL_SetTexture(Texture* texture) {
 	if (texture) {
 		GL_TextureData* textureData = (GL_TextureData*)texture->DriverData;
 		if (textureData && textureData->YUV) {
-			GLRenderer::UseShader(GLRenderer::ShaderYUV->Textured);
+			GLRenderer::SUseShader(GLRenderer::ShaderYUV->Textured);
 
 			glActiveTexture(GL_ActiveTexture = GL_TEXTURE0);
 			glUniform1i(GLRenderer::CurrentShader->LocTexture, 0);
@@ -321,11 +321,11 @@ void GL_SetTexture(Texture* texture) {
 		}
 		else {
 			if (texture->Paletted && Graphics::UsePalettes) {
-				GLRenderer::UseShader(GLRenderer::ShaderShape->Get(true, true));
+				GLRenderer::SUseShader(GLRenderer::ShaderShape->Get(true, true));
 				GL_PreparePaletteShader();
 			}
 			else {
-				GLRenderer::UseShader(GLRenderer::ShaderShape->Get(true));
+				GLRenderer::SUseShader(GLRenderer::ShaderShape->Get(true));
 			}
 		}
 
@@ -345,7 +345,7 @@ void GL_SetTexture(Texture* texture) {
 			glDisableVertexAttribArray(GLRenderer::CurrentShader->LocTexCoord);
 		}
 
-		GLRenderer::UseShader(GLRenderer::ShaderShape->Get());
+		GLRenderer::SUseShader(GLRenderer::ShaderShape->Get());
 	}
 
 	GL_BindTexture(texture);
@@ -502,29 +502,29 @@ GLenum GL_GetBlendFactorFromHatchEnum(int factor) {
 void GL_SetBlendFuncByMode(int mode) {
 	switch (mode) {
 	case BlendMode_NORMAL:
-		GLRenderer::SetBlendMode(BlendFactor_SRC_ALPHA,
+		GLRenderer::SSetBlendMode(BlendFactor_SRC_ALPHA,
 			BlendFactor_INV_SRC_ALPHA,
 			BlendFactor_ONE,
 			BlendFactor_ONE);
 		break;
 	case BlendMode_ADD:
-		GLRenderer::SetBlendMode(
+		GLRenderer::SSetBlendMode(
 			BlendFactor_SRC_ALPHA, BlendFactor_ONE, BlendFactor_ONE, BlendFactor_ONE);
 		break;
 	case BlendMode_MAX:
-		GLRenderer::SetBlendMode(BlendFactor_SRC_ALPHA,
+		GLRenderer::SSetBlendMode(BlendFactor_SRC_ALPHA,
 			BlendFactor_INV_SRC_COLOR,
 			BlendFactor_ONE,
 			BlendFactor_ONE);
 		break;
 	case BlendMode_SUBTRACT:
-		GLRenderer::SetBlendMode(BlendFactor_ZERO,
+		GLRenderer::SSetBlendMode(BlendFactor_ZERO,
 			BlendFactor_INV_SRC_COLOR,
 			BlendFactor_ONE,
 			BlendFactor_ONE);
 		break;
 	default:
-		GLRenderer::SetBlendMode(BlendFactor_SRC_ALPHA,
+		GLRenderer::SSetBlendMode(BlendFactor_SRC_ALPHA,
 			BlendFactor_INV_SRC_ALPHA,
 			BlendFactor_ONE,
 			BlendFactor_ONE);
@@ -902,7 +902,7 @@ void GL_SetState(GL_State& state,
 	GL_State* lastState = NULL) {
 	bool changeShader = false;
 	if (GLRenderer::CurrentShader != state.Shader) {
-		GLRenderer::UseShader(state.Shader);
+		GLRenderer::SUseShader(state.Shader);
 		changeShader = true;
 		GL_SetProjectionMatrix(projMat);
 		GL_SetModelViewMatrix(viewMat);
@@ -1317,87 +1317,7 @@ void GLRenderer::SetVSync(bool enabled) {
 	}
 	Graphics::VsyncEnabled = enabled;
 }
-void GLRenderer::SetGraphicsFunctions() {
-	Graphics::PixelOffset = 0.0f;
 
-	Graphics::Internal.Init = GLRenderer::Init;
-	Graphics::Internal.GetWindowFlags = GLRenderer::GetWindowFlags;
-	Graphics::Internal.SetVSync = GLRenderer::SetVSync;
-	Graphics::Internal.Dispose = GLRenderer::Dispose;
-
-	// Texture management functions
-	Graphics::Internal.CreateTexture = GLRenderer::CreateTexture;
-	Graphics::Internal.LockTexture = GLRenderer::LockTexture;
-	Graphics::Internal.UpdateTexture = GLRenderer::UpdateTexture;
-	Graphics::Internal.UpdateYUVTexture = GLRenderer::UpdateTextureYUV;
-	Graphics::Internal.UnlockTexture = GLRenderer::UnlockTexture;
-	Graphics::Internal.DisposeTexture = GLRenderer::DisposeTexture;
-
-	// Viewport and view-related functions
-	Graphics::Internal.SetRenderTarget = GLRenderer::SetRenderTarget;
-	Graphics::Internal.ReadFramebuffer = GLRenderer::ReadFramebuffer;
-	Graphics::Internal.UpdateWindowSize = GLRenderer::UpdateWindowSize;
-	Graphics::Internal.UpdateViewport = GLRenderer::UpdateViewport;
-	Graphics::Internal.UpdateClipRect = GLRenderer::UpdateClipRect;
-	Graphics::Internal.UpdateOrtho = GLRenderer::UpdateOrtho;
-	Graphics::Internal.UpdatePerspective = GLRenderer::UpdatePerspective;
-	Graphics::Internal.UpdateProjectionMatrix = GLRenderer::UpdateProjectionMatrix;
-	Graphics::Internal.MakePerspectiveMatrix = GLRenderer::MakePerspectiveMatrix;
-
-	// Shader-related functions
-	Graphics::Internal.UseShader = GLRenderer::UseShader;
-	Graphics::Internal.SetUniformF = GLRenderer::SetUniformF;
-	Graphics::Internal.SetUniformI = GLRenderer::SetUniformI;
-	Graphics::Internal.SetUniformTexture = GLRenderer::SetUniformTexture;
-
-	// Palette-related functions
-	Graphics::Internal.UpdateGlobalPalette = GLRenderer::UpdateGlobalPalette;
-
-	// These guys
-	Graphics::Internal.Clear = GLRenderer::Clear;
-	Graphics::Internal.Present = GLRenderer::Present;
-
-	// Draw mode setting functions
-	Graphics::Internal.SetBlendColor = GLRenderer::SetBlendColor;
-	Graphics::Internal.SetBlendMode = GLRenderer::SetBlendMode;
-	Graphics::Internal.SetTintColor = GLRenderer::SetTintColor;
-	Graphics::Internal.SetTintMode = GLRenderer::SetTintMode;
-	Graphics::Internal.SetTintEnabled = GLRenderer::SetTintEnabled;
-	Graphics::Internal.SetLineWidth = GLRenderer::SetLineWidth;
-
-	// Primitive drawing functions
-	Graphics::Internal.StrokeLine = GLRenderer::StrokeLine;
-	Graphics::Internal.StrokeCircle = GLRenderer::StrokeCircle;
-	Graphics::Internal.StrokeEllipse = GLRenderer::StrokeEllipse;
-	Graphics::Internal.StrokeRectangle = GLRenderer::StrokeRectangle;
-	Graphics::Internal.FillCircle = GLRenderer::FillCircle;
-	Graphics::Internal.FillEllipse = GLRenderer::FillEllipse;
-	Graphics::Internal.FillTriangle = GLRenderer::FillTriangle;
-	Graphics::Internal.FillRectangle = GLRenderer::FillRectangle;
-
-	// Texture drawing functions
-	Graphics::Internal.DrawTexture = GLRenderer::DrawTexture;
-	Graphics::Internal.DrawSprite = GLRenderer::DrawSprite;
-	Graphics::Internal.DrawSpritePart = GLRenderer::DrawSpritePart;
-
-	// 3D drawing functions
-	Graphics::Internal.DrawPolygon3D = GLRenderer::DrawPolygon3D;
-	Graphics::Internal.DrawSceneLayer3D = GLRenderer::DrawSceneLayer3D;
-	Graphics::Internal.DrawModel = GLRenderer::DrawModel;
-	Graphics::Internal.DrawModelSkinned = GLRenderer::DrawModelSkinned;
-	Graphics::Internal.DrawVertexBuffer = GLRenderer::DrawVertexBuffer;
-	Graphics::Internal.BindVertexBuffer = GLRenderer::BindVertexBuffer;
-	Graphics::Internal.UnbindVertexBuffer = GLRenderer::UnbindVertexBuffer;
-	Graphics::Internal.ClearScene3D = GLRenderer::ClearScene3D;
-	Graphics::Internal.DrawScene3D = GLRenderer::DrawScene3D;
-
-	Graphics::Internal.CreateVertexBuffer = GLRenderer::CreateVertexBuffer;
-	Graphics::Internal.DeleteVertexBuffer = GLRenderer::DeleteVertexBuffer;
-	Graphics::Internal.MakeFrameBufferID = GLRenderer::MakeFrameBufferID;
-	Graphics::Internal.DeleteFrameBufferID = GLRenderer::DeleteFrameBufferID;
-
-	Graphics::Internal.SetDepthTesting = GLRenderer::SetDepthTesting;
-}
 void GLRenderer::Dispose() {
 	glDeleteBuffers(1, &BufferCircleFill);
 	glDeleteBuffers(1, &BufferCircleStroke);
@@ -1611,7 +1531,7 @@ int GLRenderer::UpdateTexture(Texture* texture, SDL_Rect* src, void* pixels, int
 	CHECK_GL();
 	return 0;
 }
-int GLRenderer::UpdateTextureYUV(Texture* texture,
+int GLRenderer::UpdateYUVTexture(Texture* texture,
 	SDL_Rect* src,
 	void* pixelsY,
 	int pitchY,
@@ -1875,7 +1795,12 @@ void GLRenderer::MakePerspectiveMatrix(Matrix4x4* out,
 }
 
 // Shader-related functions
-void GLRenderer::UseShader(void* shader) {
+
+void GLRenderer::UseShader(void* shader){
+	SUseShader(shader);
+}
+
+void GLRenderer::SUseShader(void* shader) {
 	if (GLRenderer::CurrentShader != (GLShader*)shader) {
 		if (GLRenderer::CurrentShader) {
 			if (GLRenderer::CurrentShader->LocPosition != -1) {
@@ -1960,7 +1885,12 @@ void GLRenderer::Present() {
 
 // Draw mode setting functions
 void GLRenderer::SetBlendColor(float r, float g, float b, float a) {}
-void GLRenderer::SetBlendMode(int srcC, int dstC, int srcA, int dstA) {
+
+void GLRenderer::SetBlendMode(int srcC, int dstC, int srcA, int dstA){
+	SSetBlendMode(srcC, dstC, srcA, dstA);
+}
+
+void GLRenderer::SSetBlendMode(int srcC, int dstC, int srcA, int dstA) {
 	glBlendFuncSeparate(GL_GetBlendFactorFromHatchEnum(srcC),
 		GL_GetBlendFactorFromHatchEnum(dstC),
 		GL_GetBlendFactorFromHatchEnum(srcA),
@@ -2407,7 +2337,7 @@ void GLRenderer::DrawScene3D(Uint32 sceneIndex, Uint32 drawMode) {
 	Matrix4x4::Transpose(&viewMat);
 
 	// Prepare the shader now
-	GLRenderer::UseShader(GLRenderer::ShaderShape3D->Get(true));
+	GLRenderer::SUseShader(GLRenderer::ShaderShape3D->Get(true));
 	GL_SetProjectionMatrix(&projMat);
 	GL_SetModelViewMatrix(&viewMat);
 
