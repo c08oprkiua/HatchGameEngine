@@ -1343,7 +1343,7 @@ void PolygonRasterizer::DrawDepth(Vector3* positions,
 
 	int blendFlag = blendState.Mode;
 	int opacity = blendState.Opacity;
-	if (opacity == 0 && blendFlag == BlendFlag_TRANSPARENT) {
+	if ((blendState.Opacity == 0) && (blendState.Mode == BlendFlag_TRANSPARENT)) {
 		return;
 	}
 

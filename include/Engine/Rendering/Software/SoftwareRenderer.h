@@ -91,6 +91,8 @@ public:
 	static void RenderStart();
 	static void RenderEnd();
 
+	static void NewPixelFunction(Uint32* src, Uint32* dst, BlendState& state);
+
 	virtual void Init();
 	virtual Uint32 GetWindowFlags();
 	virtual void SetVSync(bool enable){}
@@ -381,33 +383,33 @@ public:
 	virtual void SetStencilMask(int mask);
 	virtual void ClearStencil();
 
-	static PixelFunction GetPixelFunction(int blendFlag);
+	//static PixelFunction GetPixelFunction(int blendFlag);
 
-	static void PixelStencil(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
+// 	static void PixelStencil(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
 	static void SetDotMask(int mask);
 	static void SetDotMaskH(int mask);
 	static void SetDotMaskV(int mask);
 	static void SetDotMaskOffsetH(int offset);
 	static void SetDotMaskOffsetV(int offset);
-	static void PixelDotMaskH(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelDotMaskV(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelDotMaskHV(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
+// 	static void PixelDotMaskH(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelDotMaskV(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelDotMaskHV(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
 
 	virtual void SetDepthTesting(bool enabled);
 
