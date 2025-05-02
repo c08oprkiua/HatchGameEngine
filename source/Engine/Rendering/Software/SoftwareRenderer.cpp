@@ -89,7 +89,7 @@ int FilterBlackAndWhite[0x8000];
 
 // Initialization and disposal functions
 void SoftwareRenderer::Init() {
-	SoftwareRenderer::BackendFunctions->Init();
+	Graphics::Internal->Init();
 
 	UseStencil = false;
 	UseSpriteDeform = false;
@@ -295,6 +295,10 @@ void SoftwareRenderer::SetFilter(int filter) {
 
 // These guys
 void SoftwareRenderer::Clear() {
+	if (!Graphics::CurrentRenderTarget) {
+		return;
+	}
+
 	Uint32* dstPx = (Uint32*)Graphics::CurrentRenderTarget->Pixels;
 	Uint32 dstStride = Graphics::CurrentRenderTarget->Width;
 	memset(dstPx, 0, dstStride * Graphics::CurrentRenderTarget->Height * 4);
@@ -417,6 +421,7 @@ bool SoftwareRenderer::AlterBlendState(BlendState& state) {
 #define ISOLATE_G(color) (color & 0x00FF00)
 #define ISOLATE_B(color) (color & 0x0000FF)
 
+
 void SoftwareRenderer::PixelNoFiltSetOpaque(Uint32* src,
 	Uint32* dst,
 	BlendState& state,
@@ -424,6 +429,8 @@ void SoftwareRenderer::PixelNoFiltSetOpaque(Uint32* src,
 	int* multSubTableAt) {
 	*dst = *src;
 }
+
+#if 0
 void SoftwareRenderer::PixelNoFiltSetTransparent(Uint32* src,
 	Uint32* dst,
 	BlendState& state,
@@ -433,6 +440,7 @@ void SoftwareRenderer::PixelNoFiltSetTransparent(Uint32* src,
 		(multTableAt[GET_G(*src)] + MultTableInv[(state.Opacity << 8) + GET_G(*dst)]) << 8 |
 		(multTableAt[GET_B(*src)] + MultTableInv[(state.Opacity << 8) + GET_B(*dst)]);
 }
+
 void SoftwareRenderer::PixelNoFiltSetAdditive(Uint32* src,
 	Uint32* dst,
 	BlendState& state,
@@ -559,9 +567,11 @@ static PixelFunction PixelTintFunctions[] = {SoftwareRenderer::PixelTintSetOpaqu
 	SoftwareRenderer::PixelTintSetSubtract,
 	SoftwareRenderer::PixelTintSetMatchEqual,
 	SoftwareRenderer::PixelTintSetMatchNotEqual};
+#endif
 
 #define GET_FILTER_COLOR(col) ((col & 0xF80000) >> 9 | (col & 0xF800) >> 6 | (col & 0xF8) >> 3)
 
+#if 0
 static Uint32 TintNormalSource(Uint32* src, Uint32* dst, Uint32 tintColor, Uint32 tintAmount) {
 	return ColorUtils::Tint(*src, tintColor, tintAmount);
 }
@@ -594,6 +604,7 @@ void SoftwareRenderer::SetTintFunction(int blendFlags) {
 		CurrentTintFunction = tintFunctions[CurrentBlendState.Tint.Mode];
 	}
 }
+#endif
 
 // Stencil ops (test)
 static bool StencilTestNever(Uint8* buf, Uint8 value, Uint8 mask) {
@@ -1714,10 +1725,6 @@ void SoftwareRenderer::StrokeLine(float x1, float y1, float x2, float y2) {
 		return;
 	}
 
-	if (blendState.Mode & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SetTintFunction(blendState.Mode);
-	}
-
 	DoLineStrokeBounded(dst_x1,
 		dst_y1,
 		dst_x2,
@@ -1800,10 +1807,6 @@ void SoftwareRenderer::StrokeCircle(float x, float y, float rad, float thickness
 	}
 
 	Uint32 col = ColRGB;
-
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SetTintFunction(blendFlag);
-	}
 
 	int ccx = x, ccy = y;
 	int bx = 0, by = rad;
@@ -2233,10 +2236,6 @@ void SoftwareRenderer::FillCircle(float x, float y, float rad) {
 
 	Uint32 col = ColRGB;
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SetTintFunction(blendFlag);
-	}
-
 	int dst_strideY = dst_y1 * dstStride;
 
 	if (!UseStencil &&
@@ -2339,10 +2338,6 @@ void SoftwareRenderer::FillRectangle(float x, float y, float w, float h) {
 
 	Uint32 col = ColRGB;
 	int blendFlag = blendState.Mode;
-
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SetTintFunction(blendFlag);
-	}
 
 	int dst_strideY = dst_y1 * dstStride;
 
@@ -2849,10 +2844,6 @@ void DrawSpriteImage(Texture* texture,
 		deformValues++; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
 	Uint32 color;
 	Uint32* index = nullptr;
 	int dst_strideY, src_strideY;
@@ -3240,10 +3231,6 @@ void DrawSpriteImageTransformed(Texture* texture,
 			} \
 		dst_strideY += dstStride; \
 		deformValues++; \
-	}
-
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
 	}
 
 	Uint32 color;
@@ -3783,9 +3770,6 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 
 	int blendFlag = blendState.Mode;
 	int opacity = blendState.Opacity;
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SetTintFunction(blendFlag);
-	}
 
 	Uint32* tile;
 	Uint32* color;
@@ -4414,23 +4398,11 @@ void SoftwareRenderer::DrawSceneLayer_CustomTileScanLines(SceneLayer* layer, Vie
 
 		int* multTableAt;
 		int* multSubTableAt;
-		int blendFlag;
 
 		if (!AlterBlendState(blendState)) {
 			goto scanlineDone;
 		}
 
-		blendFlag = blendState.Mode;
-
-		// TODO: Set CurrentPixelFunction instead whenever this
-		// supports the stencil.
-		if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-			linePixelFunction = PixelTintFunctions[blendFlag & BlendFlag_MODE_MASK];
-			SetTintFunction(blendFlag);
-		}
-		else {
-			linePixelFunction = PixelNoFiltFunctions[blendFlag & BlendFlag_MODE_MASK];
-		}
 
 		for (int dst_x = dst_x1; dst_x < dst_x2; dst_x++) {
 			int srcTX = srcX >> 16;
@@ -4473,20 +4445,18 @@ void SoftwareRenderer::DrawSceneLayer_CustomTileScanLines(SceneLayer* layer, Vie
 					(srcTY & 15) * srcStrides[tileID]];
 				if (isPalettedSources[tileID]) {
 					if (color && (index[color] & 0xFF000000U)) {
-						linePixelFunction(&index[color],
+						NewPixelFunction(&index[color],
 							&dstPxLine[dst_x],
-							blendState,
-							multTableAt,
-							multSubTableAt);
+							blendState
+							);
 					}
 				}
 				else {
 					if (color & 0xFF000000U) {
-						linePixelFunction(&color,
+						NewPixelFunction(&color,
 							&dstPxLine[dst_x],
-							blendState,
-							multTableAt,
-							multSubTableAt);
+							blendState
+							);
 					}
 				}
 			}
@@ -4622,9 +4592,9 @@ void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendState& st
 				*dst = col;
 				break;
 			case BlendFlag_TRANSPARENT: //1
-				*dst = 0xFF000000U | (MultTable[baseTableAddr + GET_R(col)] + MultTableInv[(state.Opacity << 8) + GET_R(*dst)]) << 16 |
-					(MultTable[baseTableAddr + GET_G(col)] + MultTableInv[(state.Opacity << 8) + GET_G(*dst)]) << 8 |
-					(MultTable[baseTableAddr + GET_B(col)] + MultTableInv[(state.Opacity << 8) + GET_B(*dst)]);
+				*dst = 0xFF000000U | ((MultTable[baseTableAddr + GET_R(col)]) + MultTableInv[baseTableAddr + GET_R(*dst)]) << 16 |
+					(MultTable[baseTableAddr + GET_G(col)] + MultTableInv[baseTableAddr + GET_G(*dst)]) << 8 |
+					(MultTable[baseTableAddr + GET_B(col)] + MultTableInv[baseTableAddr + GET_B(*dst)]);
 
 				break;
 			case BlendFlag_ADDITIVE: { //2

@@ -174,11 +174,10 @@ Uint32 DoColorTint(Uint32 color, Uint32 colorMult) {
 	col = 0xFF000000U | ((colR) & 0xFF0000) | ((colG >> 8) & 0xFF00) | ((colB >> 16) & 0xFF)
 
 #define SCANLINE_WRITE_PIXEL(px) \
-	pixelFunction((Uint32*)&px, \
+	SoftwareRenderer::NewPixelFunction((Uint32*)&px, \
 		&dstPx[dst_x + dst_strideY], \
-		blendState, \
-		multTableAt, \
-		multSubTableAt)
+		blendState \
+		)
 
 Contour* ContourField = SoftwareRenderer::ContourBuffer;
 
@@ -253,13 +252,6 @@ void PolygonRasterizer::DrawBasic(Vector2* positions,
 	}
 	Scanline::Process(lastVector[0].X, lastVector[0].Y, positions[0].X, positions[0].Y);
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
-
 	int dst_strideY = dst_y1 * dstStride;
 	if (!SoftwareRenderer::BackendFunctions->IsStencilEnabled() &&
 		((blendFlag & (BlendFlag_MODE_MASK | BlendFlag_TINT_BIT)) == BlendFlag_OPAQUE)) {
@@ -277,9 +269,6 @@ void PolygonRasterizer::DrawBasic(Vector2* positions,
 		}
 	}
 	else {
-		int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-		int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
-
 		for (int dst_y = dst_y1; dst_y < dst_y2; dst_y++) {
 			Contour contour = ContourField[dst_y];
 			if (contour.MaxX < contour.MinX) {
@@ -348,14 +337,6 @@ void PolygonRasterizer::DrawBasicBlend(Vector2* positions,
 	Sint32 col, contLen;
 	float contR, contG, contB, dxR, dxG, dxB;
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 	for (int dst_y = dst_y1; dst_y < dst_y2; dst_y++) {
 		Contour contour = ContourField[dst_y];
@@ -472,14 +453,6 @@ void PolygonRasterizer::DrawShaded(Vector3* positions,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	if (UseFog) {
@@ -589,14 +562,6 @@ void PolygonRasterizer::DrawBlendShaded(Vector3* positions,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	if (UseFog) {
@@ -752,15 +717,7 @@ void PolygonRasterizer::DrawAffine(Texture* texture,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
 	Uint32* index;
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	POLYGON_SCANLINE_DEPTH(DRAW_POLYGONAFFINE);
@@ -926,15 +883,7 @@ void PolygonRasterizer::DrawBlendAffine(Texture* texture,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
 	Uint32* index;
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	POLYGON_SCANLINE_DEPTH(DRAW_POLYGONBLENDAFFINE);
@@ -1143,15 +1092,7 @@ void PolygonRasterizer::DrawPerspective(Texture* texture,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
 	Uint32* index;
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	POLYGON_SCANLINE_DEPTH(DRAW_POLYGONPERSP);
@@ -1302,15 +1243,7 @@ void PolygonRasterizer::DrawBlendPerspective(Texture* texture,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
 	Uint32* index;
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	POLYGON_SCANLINE_DEPTH(DRAW_POLYGONBLENDPERSP);
@@ -1414,14 +1347,6 @@ void PolygonRasterizer::DrawDepth(Vector3* positions,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	if (UseFog) {
@@ -1540,14 +1465,6 @@ void PolygonRasterizer::DrawBlendDepth(Vector3* positions,
 		dst_strideY += dstStride; \
 	}
 
-	if (blendFlag & (BlendFlag_TINT_BIT | BlendFlag_FILTER_BIT)) {
-		SoftwareRenderer::SetTintFunction(blendFlag);
-	}
-
-	PixelFunction pixelFunction = SoftwareRenderer::GetPixelFunction(blendFlag);
-
-	int* multTableAt = &SoftwareRenderer::MultTable[opacity << 8];
-	int* multSubTableAt = &SoftwareRenderer::MultSubTable[opacity << 8];
 	int dst_strideY = dst_y1 * dstStride;
 
 	if (UseFog) {

@@ -28,7 +28,6 @@ struct GraphicsFunctions {
 		int pitchU,
 		void* pixelsV,
 		int pitchV) = 0;
-	virtual bool CanSetTexturePalette() = 0;
 	virtual int SetTexturePalette(Texture* texture, void* palette, unsigned numPaletteColors) = 0;
 	virtual void UnlockTexture(Texture* texture) = 0;
 	virtual void DisposeTexture(Texture* texture) = 0;

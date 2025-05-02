@@ -134,13 +134,11 @@ void Graphics::Init() {
 void Graphics::ChooseBackend() {
 	char renderer[64];
 
-	//GfxFunctions = new SoftwareRenderer;
-
 	SoftwareRenderer::BackendFunctions = new SoftwareRenderer;
 
 	SoftwareRenderer::BackendFunctions->BackendSetup();
 
-	//GfxFunctions->SetGraphicsFunctions();
+	GfxFunctions = SoftwareRenderer::BackendFunctions;
 
 	// Set renderers
 	Graphics::Renderer = NULL;

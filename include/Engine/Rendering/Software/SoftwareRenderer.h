@@ -29,7 +29,7 @@ struct MulTable {
 		}
 	}
 
-    inline int operator[](int i) const {
+    constexpr int operator[](int i) const {
         if (i > 0 && i < sizeof table){
             return table[i];
         }
@@ -84,9 +84,9 @@ public:
 	//static int MultTable[0x10000];
 	//static int MultTableInv[0x10000];
 	//static int MultSubTable[0x10000];
-	constexpr static MulTable<RegCalc> MultTable;
-	constexpr static MulTable<InvCalc> MultTableInv;
-	constexpr static MulTable<SubCalc> MultSubTable;
+	constexpr static MulTable<RegCalc> MultTable = MulTable<RegCalc>();
+	constexpr static MulTable<InvCalc> MultTableInv = MulTable<InvCalc>();
+	constexpr static MulTable<SubCalc> MultSubTable = MulTable<SubCalc>();
 
 	static void RenderStart();
 	static void RenderEnd();
@@ -100,8 +100,8 @@ public:
 	virtual void Dispose();
 
 	virtual Texture* CreateTexture(Uint32 format, Uint32 access, Uint32 width, Uint32 height);
-	virtual Texture* CreateTextureFromPixels(Uint32 width, Uint32 height, void* pixels, int pitch);
-	virtual Texture* CreateTextureFromSurface(SDL_Surface* surface);
+	virtual Texture* CreateTextureFromPixels(Uint32 width, Uint32 height, void* pixels, int pitch){return NULL;}
+	virtual Texture* CreateTextureFromSurface(SDL_Surface* surface){return NULL;}
 	virtual int LockTexture(Texture* texture, void** pixels, int* pitch);
 	virtual int UpdateTexture(Texture* texture, SDL_Rect* src, void* pixels, int pitch);
 	virtual int UpdateYUVTexture(Texture* texture,
@@ -111,20 +111,19 @@ public:
 		void* pixelsU,
 		int pitchU,
 		void* pixelsV,
-		int pitchV);
-	virtual bool CanSetTexturePalette();
-	virtual int SetTexturePalette(Texture* texture, void* palette, unsigned numPaletteColors);
+		int pitchV){return 0;}
+	virtual int SetTexturePalette(Texture* texture, void* palette, unsigned numPaletteColors){return 0;}
 	virtual void UnlockTexture(Texture* texture);
 	virtual void DisposeTexture(Texture* texture);
 
 	virtual void UseShader(void* shader);
-	virtual void SetTextureInterpolation(bool interpolate);
+	virtual void SetTextureInterpolation(bool interpolate){}
 	virtual void SetUniformTexture(Texture* texture, int uniform_index, int slot);
 	static void SetFilter(int filter);
 	virtual void SetUniformF(int location, int count, float* values);
 	virtual void SetUniformI(int location, int count, int* values);
 
-	virtual void UpdateGlobalPalette();
+	virtual void UpdateGlobalPalette(){}
 
 	virtual void UpdateViewport();
 	virtual void UpdateClipRect();
@@ -160,67 +159,67 @@ public:
 	static int ConvertBlendMode(int blendMode);
 	static BlendState GetBlendState();
 	static bool AlterBlendState(BlendState& state);
-	static void PixelNoFiltSetOpaque(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelNoFiltSetTransparent(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelNoFiltSetAdditive(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelNoFiltSetSubtract(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelNoFiltSetMatchEqual(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelNoFiltSetMatchNotEqual(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelTintSetOpaque(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelTintSetTransparent(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelTintSetAdditive(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelTintSetSubtract(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelTintSetMatchEqual(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void PixelTintSetMatchNotEqual(Uint32* src,
-		Uint32* dst,
-		BlendState& state,
-		int* multTableAt,
-		int* multSubTableAt);
-	static void SetTintFunction(int blendFlags);
+ 	static void PixelNoFiltSetOpaque(Uint32* src,
+ 		Uint32* dst,
+ 		BlendState& state,
+ 		int* multTableAt,
+ 		int* multSubTableAt);
+// 	static void PixelNoFiltSetTransparent(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelNoFiltSetAdditive(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelNoFiltSetSubtract(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelNoFiltSetMatchEqual(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelNoFiltSetMatchNotEqual(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelTintSetOpaque(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelTintSetTransparent(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelTintSetAdditive(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelTintSetSubtract(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelTintSetMatchEqual(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void PixelTintSetMatchNotEqual(Uint32* src,
+// 		Uint32* dst,
+// 		BlendState& state,
+// 		int* multTableAt,
+// 		int* multSubTableAt);
+// 	static void SetTintFunction(int blendFlags);
 
 	virtual void SetLineWidth(float n);
 
@@ -366,13 +365,13 @@ public:
 	virtual void BindVertexBuffer(Uint32 vertexBufferIndex);
 	virtual void UnbindVertexBuffer();
 	virtual void BindScene3D(Uint32 sceneIndex);
-	virtual void ClearScene3D(Uint32 sceneIndex);
+	virtual void ClearScene3D(Uint32 sceneIndex){}
 	virtual void DrawScene3D(Uint32 sceneIndex, Uint32 drawMode);
 
-	virtual void* CreateVertexBuffer(Uint32 maxVertices);
-	virtual void DeleteVertexBuffer(void* vtxBuf);
+	virtual void* CreateVertexBuffer(Uint32 maxVertices){return NULL;}
+	virtual void DeleteVertexBuffer(void* vtxBuf){}
 	virtual void MakeFrameBufferID(ISprite* sprite);
-	virtual void DeleteFrameBufferID(ISprite* sprite);
+	virtual void DeleteFrameBufferID(ISprite* sprite){}
 
 	virtual void SetStencilEnabled(bool enabled);
 	virtual bool IsStencilEnabled();
@@ -411,7 +410,7 @@ public:
 // 		int* multTableAt,
 // 		int* multSubTableAt);
 
-	virtual void SetDepthTesting(bool enabled);
+	virtual void SetDepthTesting(bool enabled){}
 
 };
 
