@@ -111,7 +111,7 @@ public:
 		void* pixelsU,
 		int pitchU,
 		void* pixelsV,
-		int pitchV){return 0;}
+		int pitchV);
 	virtual int SetTexturePalette(Texture* texture, void* palette, unsigned numPaletteColors){return 0;}
 	virtual void UnlockTexture(Texture* texture);
 	virtual void DisposeTexture(Texture* texture);

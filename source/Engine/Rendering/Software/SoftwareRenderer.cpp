@@ -156,6 +156,11 @@ int SoftwareRenderer::LockTexture(Texture* texture, void** pixels, int* pitch) {
 int SoftwareRenderer::UpdateTexture(Texture* texture, SDL_Rect* src, void* pixels, int pitch) {
 	return 0;
 }
+
+int SoftwareRenderer::UpdateYUVTexture(Texture* texture, SDL_Rect* src, void* pixelsY,
+		int pitchY, void* pixelsU, int pitchU, void* pixelsV, int pitchV){
+	return 0;
+}
 void SoftwareRenderer::UnlockTexture(Texture* texture) {}
 void SoftwareRenderer::DisposeTexture(Texture* texture) {}
 
@@ -163,9 +168,7 @@ void SoftwareRenderer::DisposeTexture(Texture* texture) {}
 void SoftwareRenderer::SetRenderTarget(Texture* texture) {}
 
 void SoftwareRenderer::ReadFramebuffer(void* pixels, int width, int height) {
-	if (Graphics::Internal) {
-		Graphics::Internal->ReadFramebuffer(pixels, width, height);
-	}
+	Graphics::Internal->ReadFramebuffer(pixels, width, height);
 }
 void SoftwareRenderer::UpdateWindowSize(int width, int height) {
 	Graphics::Internal->UpdateWindowSize(width, height);
@@ -295,7 +298,8 @@ void SoftwareRenderer::SetFilter(int filter) {
 
 // These guys
 void SoftwareRenderer::Clear() {
-	if (!Graphics::CurrentRenderTarget) {
+	if (!Graphics::CurrentRenderTarget){
+		Log::Print(Log::LOG_ERROR, "The CurrentRenderTarget is null!");
 		return;
 	}
 
@@ -778,65 +782,6 @@ void SoftwareRenderer::SetDotMaskOffsetH(int offset) {
 void SoftwareRenderer::SetDotMaskOffsetV(int offset) {
 	DotMaskOffsetV = offset;
 }
-
-// void SoftwareRenderer::PixelDotMaskH(Uint32* src,
-// 	Uint32* dst,
-// 	BlendState& state,
-// 	int* multTableAt,
-// 	int* multSubTableAt) {
-// 	size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
-//
-// 	int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
-// 	if (x & DotMaskH) {
-// 		return;
-// 	}
-//
-// 	if (UseStencil) {
-// 		PixelStencil(src, dst, state, multTableAt, multSubTableAt);
-// 	}
-// 	else {
-// 		CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
-// 	}
-// }
-// void SoftwareRenderer::PixelDotMaskV(Uint32* src,
-// 	Uint32* dst,
-// 	BlendState& state,
-// 	int* multTableAt,
-// 	int* multSubTableAt) {
-// 	size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
-//
-// 	int y = (pos / Graphics::CurrentRenderTarget->Width) + DotMaskOffsetV;
-// 	if (y & DotMaskV) {
-// 		return;
-// 	}
-//
-// 	if (UseStencil) {
-// 		PixelStencil(src, dst, state, multTableAt, multSubTableAt);
-// 	}
-// 	else {
-// 		CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
-// 	}
-// }
-// void SoftwareRenderer::PixelDotMaskHV(Uint32* src,
-// 	Uint32* dst,
-// 	BlendState& state,
-// 	int* multTableAt,
-// 	int* multSubTableAt) {
-// 	size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
-//
-// 	int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
-// 	int y = (pos / Graphics::CurrentRenderTarget->Width) + DotMaskOffsetV;
-// 	if (x & DotMaskH || y & DotMaskV) {
-// 		return;
-// 	}
-//
-// 	if (UseStencil) {
-// 		PixelStencil(src, dst, state, multTableAt, multSubTableAt);
-// 	}
-// 	else {
-// 		CurrentPixelFunction(src, dst, state, multTableAt, multSubTableAt);
-// 	}
-// }
 
 // TODO: Material support
 static int CalcVertexColor(Scene3D* scene, VertexAttribute* vertex, int normalY) {
@@ -3946,10 +3891,10 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 							(srcY & 15) <= tile->CollisionBottom[gg] &&
 							tile->CollisionBottom[gg] < 0xF0)) {
 						PixelNoFiltSetOpaque(&DRAW_COLLISION,
-							&dstPxLine[c_dst_x],
-							CurrentBlendState,
-							NULL,
-							NULL);
+ 							&dstPxLine[c_dst_x],
+ 							CurrentBlendState,
+ 							NULL,
+ 							NULL);
 					}
 					c_dst_x++;
 				}
@@ -4142,11 +4087,11 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 								(srcY & 15) <=
 									tile->CollisionBottom[gg] &&
 								tile->CollisionBottom[gg] < 0xF0)) {
-							PixelNoFiltSetOpaque(&DRAW_COLLISION,
-								&dstPxLine[c_dst_x],
-								CurrentBlendState,
-								NULL,
-								NULL);
+ 							PixelNoFiltSetOpaque(&DRAW_COLLISION,
+ 								&dstPxLine[c_dst_x],
+ 								CurrentBlendState,
+ 								NULL,
+ 								NULL);
 						}
 						c_dst_x++;
 					}
@@ -4291,11 +4236,11 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 						(flipY != isCeiling &&
 							(srcY & 15) <= tile->CollisionBottom[gg] &&
 							tile->CollisionBottom[gg] < 0xF0)) {
-						PixelNoFiltSetOpaque(&DRAW_COLLISION,
-							&dstPxLine[c_dst_x],
-							CurrentBlendState,
-							NULL,
-							NULL);
+ 						PixelNoFiltSetOpaque(&DRAW_COLLISION,
+ 							&dstPxLine[c_dst_x],
+ 							CurrentBlendState,
+ 							NULL,
+ 							NULL);
 					}
 					c_dst_x++;
 				}
@@ -4505,9 +4450,6 @@ void SoftwareRenderer::MakeFrameBufferID(ISprite* sprite) {
 }
 
 void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendState& state) {
-
-	//int* multTableAt = &SoftwareRenderer::MultTable[state.Opacity << 8];
-	//int* multSubTableAt = &SoftwareRenderer::MultSubTable[state.Opacity << 8];
 
 	int baseTableAddr = (state.Opacity << 8);
 	int blendFlags = state.Mode;

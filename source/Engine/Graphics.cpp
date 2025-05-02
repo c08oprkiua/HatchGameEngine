@@ -540,9 +540,9 @@ void Graphics::SoftwareEnd() {
 }
 
 void Graphics::UpdateGlobalPalette() {
-	if (!Graphics::GfxFunctions) {
-		return;
-	}
+// 	if (!Graphics::GfxFunctions) {
+// 		return;
+// 	}
 
 	if (Graphics::PaletteTexture == NULL) {
 		Graphics::PaletteTexture = Graphics::CreateTexture(SDL_PIXELFORMAT_ARGB8888,
@@ -1044,10 +1044,10 @@ void Graphics::DrawSpritePart(ISprite* sprite,
 
 void Graphics::DrawTile(int tile, int x, int y, bool flipX, bool flipY) {
 	// If possible, uses optimized software-renderer call instead.
-// 	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
-// 		SoftwareRenderer::DrawTile(tile, x, y, flipX, flipY);
-// 		return;
-// 	}
+ 	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
+ 		SoftwareRenderer::DrawTile(tile, x, y, flipX, flipY);
+ 		return;
+ 	}
 
 	TileSpriteInfo info = Scene::TileSpriteInfos[tile];
 	DrawSprite(info.Sprite,
@@ -1527,10 +1527,10 @@ void Graphics::DrawSceneLayer(SceneLayer* layer,
 	int layerIndex,
 	bool useCustomFunction) {
 	// If possible, uses optimized software-renderer call instead.
-// 	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
-// 		SoftwareRenderer::DrawSceneLayer(layer, currentView, layerIndex, useCustomFunction);
-// 		return;
-// 	}
+ 	if (Graphics::GfxFunctions == SoftwareRenderer::BackendFunctions) {
+ 		SoftwareRenderer::DrawSceneLayer(layer, currentView, layerIndex, useCustomFunction);
+ 		return;
+ 	}
 
 	if (layer->UsingCustomRenderFunction && useCustomFunction) {
 		Graphics::RunCustomSceneLayerFunction(&layer->CustomRenderFunction, layerIndex);
