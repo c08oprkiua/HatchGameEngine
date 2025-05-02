@@ -4449,7 +4449,7 @@ void SoftwareRenderer::MakeFrameBufferID(ISprite* sprite) {
 	sprite->ID = 0;
 }
 
-void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendState& state) {
+inline void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendState& state) {
 
 	int baseTableAddr = (state.Opacity << 8);
 	int blendFlags = state.Mode;
@@ -4457,8 +4457,7 @@ void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendState& st
 	//DotMasks and the Stencil all use these, so may as well get them done right upfront.
 	size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
 
-	View* currentView = Graphics::CurrentView;
-	Uint8* buffer = &currentView->StencilBuffer[pos];
+	Uint8* buffer = &Graphics::CurrentView->StencilBuffer[pos];
 
 	//First, we find out if we are using DotMasks.
 	if (DotMaskH || DotMaskV) {

@@ -1514,6 +1514,10 @@ int GLRenderer::UpdateTexture(Texture* texture, SDL_Rect* src, void* pixels, int
 
 	GL_TextureData* textureData = (GL_TextureData*)texture->DriverData;
 
+	if (!textureData){
+		return 0;
+	}
+
 	textureData->TextureStorageFormat = GL_RGBA;
 	textureData->PixelDataFormat = GL_RGBA;
 	textureData->PixelDataType = GL_UNSIGNED_BYTE;
