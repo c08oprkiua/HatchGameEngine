@@ -174,7 +174,7 @@ Uint32 DoColorTint(Uint32 color, Uint32 colorMult) {
 	col = 0xFF000000U | ((colR) & 0xFF0000) | ((colG >> 8) & 0xFF00) | ((colB >> 16) & 0xFF)
 
 #define SCANLINE_WRITE_PIXEL(px) \
-	SoftwareRenderer::NewPixelFunction((Uint32*)&px, \
+	SoftwareRenderer::NewPixelFunction(px, \
 		&dstPx[dst_x + dst_strideY], \
 		blendState \
 		)

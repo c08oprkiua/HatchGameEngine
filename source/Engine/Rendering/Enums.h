@@ -125,11 +125,12 @@ struct GraphicsState {
 	bool UsePaletteIndexLines;
 };
 struct TintState {
-	bool Enabled;
 	Uint32 Color;
 	Uint16 Amount;
 	Uint8 Mode;
+	bool Enabled;
 };
+
 struct BlendState {
 	int Opacity;
 	int Mode;

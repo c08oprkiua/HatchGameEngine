@@ -19,9 +19,6 @@ TileScanLine SoftwareRenderer::TileScanLineBuffer[MAX_FRAMEBUFFER_HEIGHT];
 Sint32 SoftwareRenderer::SpriteDeformBuffer[MAX_FRAMEBUFFER_HEIGHT];
 bool SoftwareRenderer::UseSpriteDeform = false;
 Contour SoftwareRenderer::ContourBuffer[MAX_FRAMEBUFFER_HEIGHT];
-//int SoftwareRenderer::MultTable[0x10000];
-//int SoftwareRenderer::MultTableInv[0x10000];
-//int SoftwareRenderer::MultSubTable[0x10000];
 
 BlendState CurrentBlendState;
 
@@ -107,15 +104,6 @@ void SoftwareRenderer::BackendSetup() {
 	CurrentBlendState.Mode = BlendMode_NORMAL;
 	CurrentBlendState.Opacity = 0xFF;
 	CurrentBlendState.FilterTable = nullptr;
-
-
-// 	for (int alpha = 0; alpha < 0x100; alpha++) {
-// 		for (int color = 0; color < 0x100; color++) {
-// 			MultTable[alpha << 8 | color] = (alpha * color) >> 8;
-// 			MultTableInv[alpha << 8 | color] = ((alpha ^ 0xFF) * color) >> 8;
-// 			MultSubTable[alpha << 8 | color] = (alpha * -(color ^ 0xFF)) >> 8;
-// 		}
-// 	}
 
 	for (int a = 0; a < TRIG_TABLE_SIZE; a++) {
 		float ang = a * M_PI / TRIG_TABLE_HALF;
@@ -390,22 +378,47 @@ int SoftwareRenderer::ConvertBlendMode(int blendMode) {
 BlendState SoftwareRenderer::GetBlendState() {
 	return CurrentBlendState;
 }
+
 bool SoftwareRenderer::AlterBlendState(BlendState& state) {
-	int blendMode = ConvertBlendMode(state.Mode);
+	int blendMode; // = ConvertBlendMode(state.Mode);
 	int opacity = state.Opacity;
 
-	// Not visible
-	if (opacity == 0 && blendMode == BlendFlag_TRANSPARENT) {
-		return false;
+	if (state.Mode == BlendMode_NORMAL){
+		if (opacity == 0xFF){
+			blendMode = BlendFlag_OPAQUE;
+		} else {
+			blendMode = BlendFlag_TRANSPARENT;
+			if (opacity == 0){
+				return false;
+			}
+		}
+	} else {
+		switch (state.Mode) {
+			case BlendMode_ADD:
+				blendMode = BlendFlag_ADDITIVE;
+				break;
+			case BlendMode_SUBTRACT:
+				blendMode = BlendFlag_SUBTRACT;
+				break;
+			case BlendMode_MATCH_EQUAL:
+				blendMode = BlendFlag_MATCH_EQUAL;
+				break;
+			case BlendMode_MATCH_NOT_EQUAL:
+				blendMode = BlendFlag_MATCH_NOT_EQUAL;
+				break;
+// 			default:
+// 				Log::Print(Log::LOG_VERBOSE, "This happens!!!");
+//
+// 				if (opacity != 0 && opacity < 0xFF){
+// 					blendMode = BlendFlag_TRANSPARENT;
+// 				} else {
+// 					blendMode = BlendFlag_OPAQUE;
+// 				}
+// 				break;
+		}
 	}
 
-	// Switch to proper blend flag depending on opacity
-	if (opacity != 0 && opacity < 0xFF && blendMode == BlendFlag_OPAQUE) {
-		blendMode = BlendFlag_TRANSPARENT;
-	}
-	else if (opacity == 0xFF && blendMode == BlendFlag_TRANSPARENT) {
-		blendMode = BlendFlag_OPAQUE;
-	}
+	//ConvertBlendMode
 
 	state.Mode = blendMode;
 
@@ -1555,7 +1568,7 @@ static void DoLineStroke(int dst_x1,
 	if (dy == 0) {
 		int dst_strideY = dst_y1 * dstStride;
 		while (dst_x1 < dst_x2) {
-			SoftwareRenderer::NewPixelFunction((Uint32*)&col,
+			SoftwareRenderer::NewPixelFunction(col,
 				&dstPx[dst_x1 + dst_strideY],
 				blendState
 			);
@@ -1566,7 +1579,7 @@ static void DoLineStroke(int dst_x1,
 	else if (dx == 0) {
 		int dst_strideY = dst_y1 * dstStride;
 		while (dst_y1 < dst_y2) {
-			SoftwareRenderer::NewPixelFunction((Uint32*)&col,
+			SoftwareRenderer::NewPixelFunction(col,
 				&dstPx[dst_x1 + dst_strideY],
 				blendState
 			);
@@ -1578,7 +1591,7 @@ static void DoLineStroke(int dst_x1,
 
 	int err = (dx > dy ? dx : -dy) / 2, e2;
 	while (true) {
-		SoftwareRenderer::NewPixelFunction((Uint32*)&col,
+		SoftwareRenderer::NewPixelFunction(col,
 			&dstPx[dst_x1 + dst_y1 * dstStride],
 			blendState
 			);
@@ -1614,7 +1627,7 @@ static void DoLineStrokeBounded(int dst_x1,
 
 	while (true) {
 		if (dst_x1 >= minX && dst_y1 >= minY && dst_x1 < maxX && dst_y1 < maxY) {
-			SoftwareRenderer::NewPixelFunction((Uint32*)&col,
+			SoftwareRenderer::NewPixelFunction(col,
 				&dstPx[dst_x1 + dst_y1 * dstStride],
 				blendState
 				);
@@ -1745,7 +1758,7 @@ void SoftwareRenderer::StrokeCircle(float x, float y, float rad, float thickness
 #define DRAW_POINT(our_x, our_y) \
 	if ((our_x) >= dst_x1 && (our_x) < dst_x2 && (our_y) >= dst_y1 && (our_y) < dst_y2) { \
 		int dst_strideY = (our_y) * dstStride; \
-		NewPixelFunction((Uint32*)&col, \
+		NewPixelFunction(col, \
 			&dstPx[(our_x) + dst_strideY], \
 			blendState\
 			); \
@@ -1976,7 +1989,7 @@ void SoftwareRenderer::StrokeThickCircle(float x, float y, float rad, float thic
 
 			if (dst_y <= in_dst_y1 || dst_y >= in_dst_y2 - 1) {
 				for (int dst_x = contourA.MinX; dst_x < contourA.MaxX; dst_x++) {
-					NewPixelFunction((Uint32*)&col,
+					NewPixelFunction(col,
 						&dstPx[dst_x + dst_strideY],
 						blendState
 						);
@@ -2002,13 +2015,13 @@ void SoftwareRenderer::StrokeThickCircle(float x, float y, float rad, float thic
 			}
 
 			for (int dst_x = contourA.MinX; dst_x < contourB.MinX; dst_x++) {
-				NewPixelFunction((Uint32*)&col,
+				NewPixelFunction(col,
 					&dstPx[dst_x + dst_strideY],
 					blendState
 					);
 			}
 			for (int dst_x = contourB.MaxX; dst_x < contourA.MaxX; dst_x++) {
-				NewPixelFunction((Uint32*)&col,
+				NewPixelFunction(col,
 					&dstPx[dst_x + dst_strideY],
 					blendState
 					);
@@ -2217,7 +2230,7 @@ void SoftwareRenderer::FillCircle(float x, float y, float rad) {
 			for (int dst_x = contour.MinX >= dst_x1 ? contour.MinX : dst_x1;
 				dst_x < contour.MaxX && dst_x < dst_x2;
 				dst_x++) {
-				NewPixelFunction((Uint32*)&col,
+				NewPixelFunction(col,
 					&dstPx[dst_x + dst_strideY],
 					blendState
 				);
@@ -2296,7 +2309,7 @@ void SoftwareRenderer::FillRectangle(float x, float y, float w, float h) {
 	else {
 		for (int dst_y = dst_y1; dst_y < dst_y2; dst_y++) {
 			for (int dst_x = dst_x1; dst_x < dst_x2; dst_x++) {
-				NewPixelFunction((Uint32*)&col,
+				NewPixelFunction(col,
 					&dstPx[dst_x + dst_strideY],
 					blendState
 					);
@@ -2695,10 +2708,10 @@ void DrawSpriteImage(Texture* texture,
 
 #define DRAW_PLACEPIXEL() \
 	if ((color = srcPxLine[src_x]) & 0xFF000000U) \
-		SoftwareRenderer::NewPixelFunction(&color, &dstPxLine[dst_x], blendState);
+		SoftwareRenderer::NewPixelFunction(color, &dstPxLine[dst_x], blendState);
 #define DRAW_PLACEPIXEL_PAL() \
 	if ((color = srcPxLine[src_x]) && (index[color] & 0xFF000000U)) \
-		SoftwareRenderer::NewPixelFunction(&index[color], \
+		SoftwareRenderer::NewPixelFunction(index[color], \
 			&dstPxLine[dst_x], \
 			blendState \
 			);
@@ -3025,10 +3038,10 @@ void DrawSpriteImageTransformed(Texture* texture,
 
 #define DRAW_PLACEPIXEL() \
 	if ((color = srcPx[src_x + src_strideY]) & 0xFF000000U) \
-		SoftwareRenderer::NewPixelFunction(&color, &dstPxLine[dst_x], blendState);
+		SoftwareRenderer::NewPixelFunction(color, &dstPxLine[dst_x], blendState);
 #define DRAW_PLACEPIXEL_PAL() \
 	if ((color = srcPx[src_x + src_strideY]) && (index[color] & 0xFF000000U)) \
-		SoftwareRenderer::NewPixelFunction(&index[color], \
+		SoftwareRenderer::NewPixelFunction(index[color], \
 			&dstPxLine[dst_x], \
 			blendState \
 			);
@@ -3820,7 +3833,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				if (isPalettedSources[tileID]) {
 					while (pixelsOfTileRemaining) {
 						if (*color && (index[*color] & 0xFF000000U)) {
-							NewPixelFunction(&index[*color],
+							NewPixelFunction(index[*color],
 								&dstPxLine[dst_x],
 								blendState
 								);
@@ -3833,7 +3846,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				else {
 					while (pixelsOfTileRemaining) {
 						if (*color & 0xFF000000U) {
-							SoftwareRenderer::NewPixelFunction(color,
+							SoftwareRenderer::NewPixelFunction(*color,
 								&dstPxLine[dst_x],
 								blendState
 							);
@@ -3850,7 +3863,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				if (isPalettedSources[tileID]) {
 					while (pixelsOfTileRemaining) {
 						if (*color && (index[*color] & 0xFF000000U)) {
-							SoftwareRenderer::NewPixelFunction(&index[*color],
+							SoftwareRenderer::NewPixelFunction(index[*color],
 								&dstPxLine[dst_x],
 								blendState
 								);
@@ -3863,7 +3876,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				else {
 					while (pixelsOfTileRemaining) {
 						if (*color & 0xFF000000U) {
-							SoftwareRenderer::NewPixelFunction(color,
+							SoftwareRenderer::NewPixelFunction(*color,
 								&dstPxLine[dst_x],
 								blendState
 								);
@@ -3964,7 +3977,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 					if (isPalettedSources[tileID]) {
 #define UNLOOPED(n, k) \
 	if (color[n] && (index[color[n]] & 0xFF000000U)) { \
-		SoftwareRenderer::NewPixelFunction(&index[color[n]], \
+		SoftwareRenderer::NewPixelFunction(index[color[n]], \
 			&dstPxLine[dst_x + k], \
 			blendState \
 			); \
@@ -3990,7 +4003,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 					else {
 #define UNLOOPED(n, k) \
 	if (color[n] & 0xFF000000U) { \
-		SoftwareRenderer::NewPixelFunction(&color[n], \
+		SoftwareRenderer::NewPixelFunction(color[n], \
 			&dstPxLine[dst_x + k], \
 			blendState \
 			); \
@@ -4020,7 +4033,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 					if (isPalettedSources[tileID]) {
 #define UNLOOPED(n, k) \
 	if (color[n] && (index[color[n]] & 0xFF000000U)) { \
-		SoftwareRenderer::NewPixelFunction(&index[color[n]], \
+		SoftwareRenderer::NewPixelFunction(index[color[n]], \
 			&dstPxLine[dst_x + k], \
 			blendState\
 			); \
@@ -4046,7 +4059,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 					else {
 #define UNLOOPED(n, k) \
 	if (color[n] & 0xFF000000U) { \
-		SoftwareRenderer::NewPixelFunction(&color[n], \
+		SoftwareRenderer::NewPixelFunction(color[n], \
 			&dstPxLine[dst_x + k], \
 			blendState \
 			); \
@@ -4166,7 +4179,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				if (isPalettedSources[tileID]) {
 					while (pixelsOfTileRemaining) {
 						if (*color && (index[*color] & 0xFF000000U)) {
-							SoftwareRenderer::NewPixelFunction(&index[*color],
+							SoftwareRenderer::NewPixelFunction(index[*color],
 								&dstPxLine[dst_x],
 								blendState
 								);
@@ -4179,7 +4192,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				else {
 					while (pixelsOfTileRemaining) {
 						if (*color & 0xFF000000U) {
-							SoftwareRenderer::NewPixelFunction(color,
+							SoftwareRenderer::NewPixelFunction(*color,
 								&dstPxLine[dst_x],
 								blendState
 							);
@@ -4196,7 +4209,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				if (isPalettedSources[tileID]) {
 					while (pixelsOfTileRemaining) {
 						if (*color && (index[*color] & 0xFF000000U)) {
-							SoftwareRenderer::NewPixelFunction(&index[*color],
+							SoftwareRenderer::NewPixelFunction(index[*color],
 								&dstPxLine[dst_x],
 								blendState
 							);
@@ -4209,7 +4222,7 @@ void SoftwareRenderer::DrawSceneLayer_HorizontalParallax(SceneLayer* layer, View
 				else {
 					while (pixelsOfTileRemaining) {
 						if (*color & 0xFF000000U) {
-							SoftwareRenderer::NewPixelFunction(color,
+							SoftwareRenderer::NewPixelFunction(*color,
 								&dstPxLine[dst_x],
 								blendState
 								);
@@ -4390,7 +4403,7 @@ void SoftwareRenderer::DrawSceneLayer_CustomTileScanLines(SceneLayer* layer, Vie
 					(srcTY & 15) * srcStrides[tileID]];
 				if (isPalettedSources[tileID]) {
 					if (color && (index[color] & 0xFF000000U)) {
-						NewPixelFunction(&index[color],
+						NewPixelFunction(index[color],
 							&dstPxLine[dst_x],
 							blendState
 							);
@@ -4398,7 +4411,7 @@ void SoftwareRenderer::DrawSceneLayer_CustomTileScanLines(SceneLayer* layer, Vie
 				}
 				else {
 					if (color & 0xFF000000U) {
-						NewPixelFunction(&color,
+						NewPixelFunction(color,
 							&dstPxLine[dst_x],
 							blendState
 							);
@@ -4449,83 +4462,61 @@ void SoftwareRenderer::MakeFrameBufferID(ISprite* sprite) {
 	sprite->ID = 0;
 }
 
-inline void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendState& state) {
+__attribute__((always_inline)) void SoftwareRenderer::NewPixelFunction(Uint32 src, Uint32* dst, BlendState& state) {
 
 	int baseTableAddr = (state.Opacity << 8);
 	int blendFlags = state.Mode;
 
-	//DotMasks and the Stencil all use these, so may as well get them done right upfront.
 	size_t pos = dst - (Uint32*)Graphics::CurrentRenderTarget->Pixels;
-
 	Uint8* buffer = &Graphics::CurrentView->StencilBuffer[pos];
 
-	//First, we find out if we are using DotMasks.
-	if (DotMaskH || DotMaskV) {
-		if (DotMaskH){
-			int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
-			if (x & DotMaskH) {
-				return;
-			}
-		}
-
-		if (DotMaskV){
-			int y = (pos / Graphics::CurrentRenderTarget->Width) + DotMaskOffsetV;
-			if (y & DotMaskV) {
-				return;
-			}
+	if (DotMaskH){
+		int x = (pos % Graphics::CurrentRenderTarget->Width) + DotMaskOffsetH;
+		if (x & DotMaskH) {
+			return;
 		}
 	}
 
-	//We need to optionally wrap PixelStencil processes around CurrentPixelFunction processes.
+	if (DotMaskV){
+		int y = (pos / Graphics::CurrentRenderTarget->Width) + DotMaskOffsetV;
+		if (y & DotMaskV) {
+			return;
+		}
+	}
 
-	bool willDraw = UseStencil ? StencilFuncTest(buffer, StencilValue, StencilMask) : true;
-
-	if (willDraw){
+	//if stencil is used, use the StencilFuncTest
+	if ((!UseStencil) || StencilFuncTest(buffer, StencilValue, StencilMask)){
 		//Now, we do CurrentPixelFunction.
 
-		Uint32 col = *src;
-		bool matchCondition = ((*dst & 0xFCFCFC) == (SoftwareRenderer::CompareColor & 0xFCFCFC));
+		Uint32 col(src);
 
 		if (blendFlags & BlendFlag_TINT_BIT) {
-			//CurrentTintFunction can be inlined but that's a different thing to tackle later.
-
-			int blendFlagMode = blendFlags & BlendFlag_MODE_MASK;
-			bool willTint = true;
-
-			//These both operate differently than the rest
-			if ((blendFlagMode == BlendFlag_MATCH_EQUAL) || (blendFlagMode == BlendFlag_MATCH_NOT_EQUAL)){
-				//if matchCondition is true, BlendFlag_MATCH_EQUAL will work, or matchCondition
-				//is true and BlendFlag_MATCH_NOT_EQUAL will not work. Alternatively, matchCondition is false and
-				//BlendFlag_MATCH_EQUAL will not work, or matchCondition is false and BlendFlag_MATCH_NOT_EQUAL will work.
-				//Or, in simplest terms, BlendFlag_MATCH_NOT_EQUAL and matchCondition are XOR exclusive. Convenient!
-				willTint = !(matchCondition ^ (blendFlagMode == BlendFlag_MATCH_NOT_EQUAL));
-			}
-			if (willTint){
-				if (blendFlags & BlendFlag_FILTER_BIT) {
-					if (CurrentBlendState.Tint.Mode & 1){ //1
-						col = CurrentBlendState.FilterTable[GET_FILTER_COLOR(*dst)];
-					}
-					else { //0
-						col = CurrentBlendState.FilterTable[GET_FILTER_COLOR(*src)];
-					}
+			if (blendFlags & BlendFlag_FILTER_BIT) {
+				if (CurrentBlendState.Tint.Mode == 1){
+					col = CurrentBlendState.FilterTable[GET_FILTER_COLOR(*dst)];
 				}
-				else if (blendFlags & BlendFlag_TINT_BIT) {
-					switch(CurrentBlendState.Tint.Mode){
-						case 0:
-							col = ColorUtils::Tint(*src, state.Tint.Color, state.Tint.Amount);
-							break;
-						case 1:
-							col = ColorUtils::Tint(*dst, state.Tint.Color, state.Tint.Amount);
-							break;
-						case 2:
-							col = ColorUtils::Blend(*src, state.Tint.Color, state.Tint.Amount);
-							break;
-						case 3:
-							col = ColorUtils::Blend(*dst, state.Tint.Color, state.Tint.Amount);
-							break;
-					}
+				else { //0
+					col = CurrentBlendState.FilterTable[GET_FILTER_COLOR(src)];
 				}
 			}
+			else {
+				switch(CurrentBlendState.Tint.Mode){
+					case 0:
+						col = ColorUtils::Tint(src, state.Tint.Color, state.Tint.Amount);
+						break;
+					case 1:
+						col = ColorUtils::Tint(*dst, state.Tint.Color, state.Tint.Amount);
+						break;
+					case 2:
+						col = ColorUtils::Blend(src, state.Tint.Color, state.Tint.Amount);
+						break;
+					case 3:
+						col = ColorUtils::Blend(*dst, state.Tint.Color, state.Tint.Amount);
+						break;
+				}
+			}
+			col |= 0xFF000000U;
+
 		}
 		//Not much to write home about here, these are all pretty straightforward-
 		switch(blendFlags & BlendFlag_MODE_MASK){
@@ -4571,12 +4562,12 @@ inline void SoftwareRenderer::NewPixelFunction(Uint32* src, Uint32* dst, BlendSt
 				break;
 			}
 			case BlendFlag_MATCH_EQUAL: //4
-				if (matchCondition) {
+				if (((*dst & 0xFCFCFC) == (SoftwareRenderer::CompareColor & 0xFCFCFC))) {
 					*dst = col;
 				}
 				break;
 			case BlendFlag_MATCH_NOT_EQUAL: //5
-				if (!matchCondition) {
+				if (((*dst & 0xFCFCFC) != (SoftwareRenderer::CompareColor & 0xFCFCFC))) {
 					*dst = col;
 				}
 				break;

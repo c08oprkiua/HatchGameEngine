@@ -81,21 +81,11 @@ Uint32 ColorUtils::Tint(Uint32 color, Uint32 colorMult) {
 	dB = (Uint8)((dB * sB + 0xFF) >> 8);
 	return dB | (dG << 8) | (dR << 16);
 }
-Uint32 ColorUtils::Tint(Uint32 color, Uint32 colorMult, Uint16 percentage) {
-	return Blend(color, Tint(color, colorMult), percentage);
-}
 Uint32 ColorUtils::Multiply(Uint32 color, Uint32 colorMult) {
 	Uint32 R = (((colorMult >> 16) & 0xFF) + 1) * (color & 0xFF0000);
 	Uint32 G = (((colorMult >> 8) & 0xFF) + 1) * (color & 0x00FF00);
 	Uint32 B = (((colorMult) & 0xFF) + 1) * (color & 0x0000FF);
 	return (int)((R >> 8) | (G >> 8) | (B >> 8));
-}
-Uint32 ColorUtils::Blend(Uint32 color1, Uint32 color2, int percent) {
-	Uint32 rb = color1 & 0xFF00FFU;
-	Uint32 g = color1 & 0x00FF00U;
-	rb += (((color2 & 0xFF00FFU) - rb) * percent) >> 8;
-	g += (((color2 & 0x00FF00U) - g) * percent) >> 8;
-	return (rb & 0xFF00FFU) | (g & 0x00FF00U);
 }
 void ColorUtils::ConvertFromARGBtoABGR(Uint32* argb, int count) {
 	for (int p = 0; p < count; p++) {

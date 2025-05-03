@@ -91,7 +91,7 @@ public:
 	static void RenderStart();
 	static void RenderEnd();
 
-	static void NewPixelFunction(Uint32* src, Uint32* dst, BlendState& state);
+	static void NewPixelFunction(Uint32 src, Uint32* dst, BlendState& state);
 
 	virtual void Init();
 	virtual Uint32 GetWindowFlags();
